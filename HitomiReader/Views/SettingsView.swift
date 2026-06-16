@@ -175,9 +175,7 @@ struct SettingsView: View {
             // Clear Favorites Alert
             .alert("Clear Favorites", isPresented: $showClearFavoritesAlert) {
                 Button("Clear", role: .destructive) {
-                    for tag in favoriteTags.tags {
-                        favoriteTags.removeTag(type: tag.type, name: tag.name)
-                    }
+                    favoriteTags.clearAll()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -190,9 +188,7 @@ struct SettingsView: View {
                     settings.readerDirection = .rtl
                     settings.save()
                     history.clearAll()
-                    for tag in favoriteTags.tags {
-                        favoriteTags.removeTag(type: tag.type, name: tag.name)
-                    }
+                    favoriteTags.clearAll()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {

@@ -42,7 +42,11 @@ class BrowseViewModel: ObservableObject {
     
     private func loadPage() async {
         do {
-            let ids = try await HitomiAPI.shared.fetchGalleryIDs(page: currentPage, perPage: perPage)
+            let ids = try await HitomiAPI.shared.fetchGalleryIDs(
+                page: currentPage,
+                perPage: perPage,
+                language: SettingsManager.shared.preferredLanguage
+            )
             
             if ids.isEmpty {
                 hasMorePages = false

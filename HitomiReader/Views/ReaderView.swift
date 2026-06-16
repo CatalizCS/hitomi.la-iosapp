@@ -25,7 +25,7 @@ struct ReaderView: View {
     @State private var currentZoom: CGFloat = 1.0
     @State private var totalZoom: CGFloat = 1.0
     
-    private var pageCount: Int { gallery.files.count }
+    private var pageCount: Int { gallery.files?.count ?? 0 }
     
     var body: some View {
         ZStack {
@@ -337,7 +337,7 @@ struct ReaderView: View {
     
     private func resolveImageURLs() async {
         do {
-            try await HitomiAPI.shared.resolver.ensureReady()
+            try await ImageURLResolver.shared.ensureReady()
         } catch {
             // Continue anyway, will try per-page
         }
@@ -358,7 +358,8 @@ struct ReaderView: View {
     
     private func resolveURL(for index: Int) async {
         guard index >= 0, index < pageCount, imageURLs[index] == nil else { return }
-        let image = gallery.files[index]
+        guard let files = gallery.files, index < files.count else { return }
+        let image = files[index]
         if let url = try? await HitomiAPI.shared.getImageURL(image: image, galleryID: gallery.id) {
             imageURLs[index] = url
         }
@@ -374,7 +375,17 @@ struct ReaderView: View {
     // MARK: - Save Progress
     
     private func saveProgress(page: Int) {
-        history.addEntry(gallery: gallery, page: page)
+        var thumbnailURL: URL? = nil
+        if let firstImage = gallery.files?.first {
+            thumbnailURL = try? ImageURLResolver.shared.resolveThumbnailURL(galleryID: gallery.id, image: firstImage)
+        }
+        history.upsert(
+            galleryID: gallery.id,
+            title: gallery.displayTitle,
+            thumbnailURL: thumbnailURL,
+            lastPage: page,
+            totalPages: pageCount
+        )
     }
 }
 

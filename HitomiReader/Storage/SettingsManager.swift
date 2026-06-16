@@ -121,4 +121,7 @@ final class SettingsManager: ObservableObject {
         readerDirection = .rtl
         itemsPerPage = NozomiParser.defaultPageSize
     }
+
+    /// Dummy save method since properties auto-save via didSet.
+    func save() {}
 }

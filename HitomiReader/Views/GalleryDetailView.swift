@@ -29,7 +29,7 @@ struct GalleryDetailView: View {
     }
     
     private var coverURL: URL? {
-        guard let firstImage = gallery.files.first else { return nil }
+        guard let firstImage = gallery.files?.first else { return nil }
         let path = GalleryCard.thumbnailPath(hash: firstImage.hash)
         return URL(string: "https://tn.hitomi.la/bigtn/\(path).jpg")
     }
@@ -142,7 +142,7 @@ struct GalleryDetailView: View {
                 // Page count badge
                 metadataBadge(
                     icon: "doc.fill",
-                    text: "\(gallery.files.count) pages",
+                    text: "\(gallery.files?.count ?? 0) pages",
                     color: Color(hex: "14B8A6")
                 )
                 
@@ -176,14 +176,19 @@ struct GalleryDetailView: View {
     
     // MARK: - Artists Section
     private var artistsSection: some View {
-        Group {
-            if !gallery.artists.isEmpty || !gallery.groups.isEmpty {
+        let artists = gallery.artists ?? []
+        let groups = gallery.groups ?? []
+        let parodys = gallery.parodys ?? []
+        let characters = gallery.characters ?? []
+        
+        return Group {
+            if !artists.isEmpty || !groups.isEmpty || !parodys.isEmpty || !characters.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    if !gallery.artists.isEmpty {
+                    if !artists.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             sectionLabel("Artists")
                             FlowLayout(spacing: 8) {
-                                ForEach(gallery.artists, id: \.artist) { artist in
+                                ForEach(artists, id: \.artist) { artist in
                                     TagChip(name: artist.artist, type: .artist) {
                                         // Could navigate to artist search
                                     }
@@ -192,33 +197,33 @@ struct GalleryDetailView: View {
                         }
                     }
                     
-                    if !gallery.groups.isEmpty {
+                    if !groups.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             sectionLabel("Groups")
                             FlowLayout(spacing: 8) {
-                                ForEach(gallery.groups, id: \.group) { group in
+                                ForEach(groups, id: \.group) { group in
                                     TagChip(name: group.group, type: .group)
                                 }
                             }
                         }
                     }
                     
-                    if !gallery.parodys.isEmpty {
+                    if !parodys.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             sectionLabel("Series")
                             FlowLayout(spacing: 8) {
-                                ForEach(gallery.parodys, id: \.parody) { parody in
+                                ForEach(parodys, id: \.parody) { parody in
                                     TagChip(name: parody.parody, type: .series)
                                 }
                             }
                         }
                     }
                     
-                    if !gallery.characters.isEmpty {
+                    if !characters.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             sectionLabel("Characters")
                             FlowLayout(spacing: 8) {
-                                ForEach(gallery.characters, id: \.character) { char in
+                                ForEach(characters, id: \.character) { char in
                                     TagChip(name: char.character, type: .character)
                                 }
                             }
@@ -231,8 +236,9 @@ struct GalleryDetailView: View {
     
     // MARK: - Tags Section
     private var tagsSection: some View {
-        Group {
-            if !gallery.tags.isEmpty {
+        let tags = gallery.tags ?? []
+        return Group {
+            if !tags.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         sectionLabel("Tags")
@@ -259,7 +265,7 @@ struct GalleryDetailView: View {
                     }
                     
                     FlowLayout(spacing: 8) {
-                        ForEach(gallery.tags, id: \.tag) { tag in
+                        ForEach(tags, id: \.tag) { tag in
                             tagChipWithFavorite(tag)
                         }
                     }
@@ -268,18 +274,11 @@ struct GalleryDetailView: View {
         }
     }
     
-    private func tagChipWithFavorite(_ tag: Gallery.GalleryTag) -> some View {
-        let isFemale = tag.female == "1"
-        let isMale = tag.male == "1"
-        let tagType: String = isFemale ? "female" : (isMale ? "male" : "tag")
-        let isFav = favoriteTags.isFavorite(type: tagType, name: tag.tag)
+    private func tagChipWithFavorite(_ tag: Tag) -> some View {
+        let isFav = favoriteTags.isFavorite(tag)
         
-        return TagChip(galleryTag: tag) {
-            if isFav {
-                favoriteTags.removeTag(type: tagType, name: tag.tag)
-            } else {
-                favoriteTags.addTag(type: tagType, name: tag.tag)
-            }
+        return TagChip(tag: tag) {
+            favoriteTags.toggle(tag)
         }
         .overlay(
             Group {
@@ -361,12 +360,9 @@ struct GalleryDetailView: View {
     }
     
     private func favoriteAllTags() {
-        for tag in gallery.tags {
-            let isFemale = tag.female == "1"
-            let isMale = tag.male == "1"
-            let tagType = isFemale ? "female" : (isMale ? "male" : "tag")
-            if !favoriteTags.isFavorite(type: tagType, name: tag.tag) {
-                favoriteTags.addTag(type: tagType, name: tag.tag)
+        for tag in gallery.tags ?? [] {
+            if !favoriteTags.isFavorite(tag) {
+                favoriteTags.add(tag)
             }
         }
     }
@@ -382,9 +378,9 @@ struct GalleryDetailView: View {
             groups: [Gallery.Group(group: "sample_group", url: "/group/sample")],
             parodys: [Gallery.Parody(parody: "original", url: "/series/original")],
             tags: [
-                Gallery.GalleryTag(tag: "schoolgirl", url: "", female: "1", male: nil),
-                Gallery.GalleryTag(tag: "glasses", url: "", female: nil, male: "1"),
-                Gallery.GalleryTag(tag: "full color", url: "", female: nil, male: nil),
+                Tag(tag: "schoolgirl", url: "", gender: .female),
+                Tag(tag: "glasses", url: "", gender: .male),
+                Tag(tag: "full color", url: "", gender: nil),
             ],
             characters: [Gallery.Character(character: "character_name", url: "/char/test")],
             language: "japanese",

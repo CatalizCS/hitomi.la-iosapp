@@ -34,7 +34,7 @@ final class ImageCache {
 // MARK: - Image Loader
 
 @MainActor
-final class ImageLoader: ObservableObject {
+final class AsyncImageLoader: ObservableObject {
     @Published var image: UIImage?
     @Published var isLoading = false
     @Published var hasError = false
@@ -74,7 +74,7 @@ final class ImageLoader: ObservableObject {
         
         task = Task { [weak self] in
             do {
-                let (data, response) = try await ImageLoader.session.data(from: url)
+                let (data, response) = try await AsyncImageLoader.session.data(from: url)
                 
                 guard !Task.isCancelled else { return }
                 
@@ -116,7 +116,7 @@ struct AsyncImageView: View {
     var contentMode: ContentMode = .fill
     var cornerRadius: CGFloat = 0
     
-    @StateObject private var loader = ImageLoader()
+    @StateObject private var loader = AsyncImageLoader()
     @State private var appeared = false
     
     var body: some View {

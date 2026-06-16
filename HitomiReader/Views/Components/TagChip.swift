@@ -98,10 +98,10 @@ struct TagChip: View {
 // MARK: - Convenience initializer for Gallery tags
 
 extension TagChip {
-    /// Create a TagChip from a Gallery.GalleryTag
-    init(galleryTag: Gallery.GalleryTag, onTap: (() -> Void)? = nil) {
-        let isFemale = galleryTag.female == "1"
-        let isMale = galleryTag.male == "1"
+    /// Create a TagChip from a Tag
+    init(tag: Tag, onTap: (() -> Void)? = nil) {
+        let isFemale = tag.gender == .female
+        let isMale = tag.gender == .male
         
         let tagType: TagType
         if isFemale {
@@ -112,7 +112,7 @@ extension TagChip {
             tagType = .tag
         }
         
-        self.name = galleryTag.tag
+        self.name = tag.tag
         self.type = tagType
         self.isFemale = isFemale
         self.isMale = isMale

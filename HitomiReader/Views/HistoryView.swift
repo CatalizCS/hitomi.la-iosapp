@@ -74,7 +74,7 @@ struct HistoryView: View {
     private func historyRow(_ entry: HistoryManager.HistoryEntry) -> some View {
         HStack(spacing: 14) {
             // Thumbnail
-            if let urlString = entry.thumbnailURL, let url = URL(string: urlString) {
+            if let url = entry.thumbnailURL {
                 AsyncImageView(url: url, contentMode: .fill, cornerRadius: 8)
                     .frame(width: 56, height: 78)
                     .clipped()
@@ -143,7 +143,7 @@ struct HistoryView: View {
     private func deleteEntries(at offsets: IndexSet) {
         let sorted = sortedEntries
         for index in offsets {
-            history.removeEntry(galleryID: sorted[index].galleryID)
+            history.remove(galleryID: sorted[index].galleryID)
         }
     }
     

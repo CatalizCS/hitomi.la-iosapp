@@ -11,7 +11,7 @@ struct GalleryCard: View {
     
     /// Computed thumbnail URL from the first image hash
     private var thumbnailURL: URL? {
-        guard let firstImage = gallery.files.first else { return nil }
+        guard let firstImage = gallery.files?.first else { return nil }
         let path = Self.thumbnailPath(hash: firstImage.hash)
         return URL(string: "https://tn.hitomi.la/bigtn/\(path).jpg")
     }
@@ -60,7 +60,7 @@ struct GalleryCard: View {
                         .multilineTextAlignment(.leading)
                     
                     // Artist name
-                    if let artist = gallery.artists.first?.artist {
+                    if let artist = gallery.artists?.first?.artist {
                         Text(artist)
                             .font(.caption2)
                             .foregroundColor(.white.opacity(0.6))
@@ -78,7 +78,7 @@ struct GalleryCard: View {
                 }
                 
                 // MARK: - Page Count Badge
-                if !gallery.files.isEmpty {
+                if !(gallery.files ?? []).isEmpty {
                     pageCountBadge
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(8)
@@ -114,7 +114,7 @@ struct GalleryCard: View {
         HStack(spacing: 3) {
             Image(systemName: "doc.fill")
                 .font(.system(size: 8))
-            Text("\(gallery.files.count)")
+            Text("\(gallery.files?.count ?? 0)")
                 .font(.system(size: 9, weight: .bold))
         }
         .foregroundColor(.white)

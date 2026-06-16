@@ -231,6 +231,35 @@ final class HitomiAPI: ObservableObject {
         let galleries = await fetchGalleries(ids: ids)
         return (galleries, totalCount)
     }
+
+    // MARK: - View Compatibility Wrappers
+
+    /// Fetches gallery IDs for BrowseView.
+    func fetchGalleryIDs(page: Int, perPage: Int, language: String? = nil) async throws -> [Int] {
+        let (ids, _) = try await fetchGalleryIDs(language: language, page: page, pageSize: perPage)
+        return ids
+    }
+
+    /// Fetches a gallery's metadata. Alias of `fetchGallery`.
+    func fetchGalleryInfo(id: Int) async throws -> Gallery {
+        try await fetchGallery(id: id)
+    }
+
+    /// Fetches gallery IDs by tag for SearchView.
+    func fetchGalleryIDsByTag(type: String, name: String, page: Int, perPage: Int) async throws -> [Int] {
+        let gender: Tag.Gender? = Tag.Gender(rawValue: type)
+        // Match the url structure used in hitomi
+        let tagUrl = "/tag/\(type == "tag" ? "" : type + ":")\(name)-all.html"
+        let tag = Tag(tag: name, url: tagUrl, gender: gender)
+        let (ids, _) = try await fetchGalleryIDs(tag: tag, language: nil, page: page, pageSize: perPage)
+        return ids
+    }
+
+    /// Resolves an image URL using the singleton ImageURLResolver.
+    func getImageURL(image: GalleryImage, galleryID: Int) async throws -> URL {
+        try await ImageURLResolver.shared.ensureReady()
+        return try ImageURLResolver.shared.resolveImageURL(galleryID: galleryID, image: image)
+    }
 }
 
 // MARK: - Errors

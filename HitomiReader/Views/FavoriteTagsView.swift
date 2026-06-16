@@ -9,7 +9,7 @@ import SwiftUI
 struct FavoriteTagsView: View {
     @EnvironmentObject var favoriteTags: FavoriteTagsManager
     @State private var showClearConfirmation = false
-    @State private var navigateToSearch: FavoriteTagsManager.FavoriteTag? = nil
+    @State private var navigateToSearch: Tag? = nil
     
     var body: some View {
         ZStack {
@@ -43,9 +43,7 @@ struct FavoriteTagsView: View {
         ) {
             Button("Clear All", role: .destructive) {
                 withAnimation {
-                    for tag in favoriteTags.tags {
-                        favoriteTags.removeTag(type: tag.type, name: tag.name)
-                    }
+                    favoriteTags.clearAll()
                 }
             }
             Button("Cancel", role: .cancel) {}
@@ -53,7 +51,7 @@ struct FavoriteTagsView: View {
             Text("This will remove all saved favorite tags.")
         }
         .navigationDestination(item: $navigateToSearch) { tag in
-            TagSearchResultsView(type: tag.type, name: tag.name)
+            TagSearchResultsView(tag: tag)
         }
     }
     
@@ -94,22 +92,22 @@ struct FavoriteTagsView: View {
     }
     
     // MARK: - Tag Row
-    private func tagRow(_ tag: FavoriteTagsManager.FavoriteTag) -> some View {
+    private func tagRow(_ tag: Tag) -> some View {
         Button {
             navigateToSearch = tag
         } label: {
             HStack(spacing: 14) {
                 // Color indicator
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(tagColor(for: tag.type))
+                    .fill(tagColor(for: tag.nozomiTagType))
                     .frame(width: 4, height: 32)
                 
                 // Gender prefix
-                if tag.type == "female" {
+                if tag.nozomiTagType == "female" {
                     Text("♀")
                         .font(.body.weight(.bold))
                         .foregroundColor(tagColor(for: "female"))
-                } else if tag.type == "male" {
+                } else if tag.nozomiTagType == "male" {
                     Text("♂")
                         .font(.body.weight(.bold))
                         .foregroundColor(tagColor(for: "male"))
@@ -117,11 +115,11 @@ struct FavoriteTagsView: View {
                 
                 // Tag name
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(tag.name)
+                    Text(tag.tag)
                         .font(.body.weight(.medium))
                         .foregroundColor(.white)
                     
-                    Text(tag.type)
+                    Text(tag.nozomiTagType)
                         .font(.caption2)
                         .foregroundColor(.white.opacity(0.35))
                 }
@@ -161,17 +159,17 @@ struct FavoriteTagsView: View {
     
     struct TagGroup: Identifiable {
         let type: String
-        let tags: [FavoriteTagsManager.FavoriteTag]
+        let tags: [Tag]
         var id: String { type }
     }
     
     private var groupedTags: [TagGroup] {
-        let grouped = Dictionary(grouping: favoriteTags.tags) { $0.type }
+        let grouped = Dictionary(grouping: favoriteTags.tags) { $0.nozomiTagType }
         let order = ["female", "male", "artist", "group", "series", "character", "tag"]
         
         return order.compactMap { type in
             guard let tags = grouped[type], !tags.isEmpty else { return nil }
-            return TagGroup(type: type, tags: tags.sorted { $0.name < $1.name })
+            return TagGroup(type: type, tags: tags.sorted { $0.tag < $1.tag })
         }
     }
     
@@ -192,7 +190,7 @@ struct FavoriteTagsView: View {
     private func deleteTagsInGroup(group: TagGroup, offsets: IndexSet) {
         for index in offsets {
             let tag = group.tags[index]
-            favoriteTags.removeTag(type: tag.type, name: tag.name)
+            favoriteTags.remove(tag)
         }
     }
 }
@@ -200,8 +198,7 @@ struct FavoriteTagsView: View {
 // MARK: - Tag Search Results View
 
 struct TagSearchResultsView: View {
-    let type: String
-    let name: String
+    let tag: Tag
     
     @StateObject private var viewModel = SearchViewModel()
     
@@ -218,7 +215,7 @@ struct TagSearchResultsView: View {
                 VStack(spacing: 16) {
                     ProgressView()
                         .tint(Color(hex: "FF2D78"))
-                    Text("Searching \(type):\(name)…")
+                    Text("Searching \(tag.displayName)…")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.5))
                 }
@@ -262,10 +259,10 @@ struct TagSearchResultsView: View {
                 }
             }
         }
-        .navigationTitle(name)
+        .navigationTitle(tag.tag)
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await viewModel.searchByTag(type: type, name: name)
+            await viewModel.searchByTag(type: tag.nozomiTagType, name: tag.tag)
         }
     }
 }
