@@ -2,7 +2,7 @@
 // HitomiReader
 //
 // Main data model for a hitomi.la gallery entry.
-// Decoded from the JSON payload at https://ltn.hitomi.la/galleries/{id}.js
+// Decoded from the JSON payload at https://ltn.gold-usergeneratedcontent.net/galleries/{id}.js
 // after stripping the "var galleryinfo = " prefix.
 
 import Foundation

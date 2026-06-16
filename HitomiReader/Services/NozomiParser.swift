@@ -50,7 +50,7 @@ struct NozomiParser {
     // MARK: - URL Construction
 
     /// Base URL for all .nozomi endpoints.
-    private static let baseURL = "https://ltn.hitomi.la"
+    private static let baseURL = "https://ltn.gold-usergeneratedcontent.net"
 
     /// Builds the .nozomi URL for a language-specific index.
     ///

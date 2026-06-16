@@ -34,57 +34,71 @@ final class ImageURLResolver: ObservableObject {
 
     // MARK: - Constants
 
-    private let ggJSURL = URL(string: "https://ltn.hitomi.la/gg.js")!
+    private let ggJSURL = URL(string: "https://ltn.gold-usergeneratedcontent.net/gg.js")!
 
     /// The common.js helper functions that hitomi.la's frontend uses.
     /// These are stable and rarely change; we embed them directly.
     private let commonJSSource = """
-    // full_path_from_hash: converts a hash into a directory/file path.
-    // e.g. "abcdef1234567890" → "0/90/abcdef1234567890"
-    function full_path_from_hash(hash) {
-        return hash.replace(/^.*(..)(.)$/, '$2/$1/' + hash);
-    }
+    const domain2 = 'gold-usergeneratedcontent.net';
 
-    // subdomain_from_url: determines the CDN subdomain letter.
-    // Reads the second-to-last path component, converts to int, runs through gg(),
-    // and maps to a letter: 0→'a', 1→'b', etc.
-    function subdomain_from_url(url, base) {
-        var retval = 'b';
-        if (base) {
-            retval = base;
+    function subdomain_from_url(url, base, dir) {
+        var retval = '';
+        if (!base) {
+            if (dir === 'webp') {
+                retval = 'w';
+            } else if (dir === 'avif') {
+                retval = 'a';
+            }
         }
 
         var b = 16;
 
-        var r = /\\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])\\//.exec(url);
-        if (!r) {
-            return 'a';
+        var r = /\\/[0-9a-f]{61}([0-9a-f]{2})([0-9a-f])/;
+        var m = r.exec(url);
+        if (!m) {
+            return retval;
         }
 
-        var g = parseInt(r[2] + r[1], 16);
-
+        var g = parseInt(m[2]+m[1], b);
         if (!isNaN(g)) {
-            retval = String.fromCharCode(97 + gg(g) % b) + retval;
+            if (base) {
+                retval = String.fromCharCode(97 + gg.m(g)) + base;
+            } else {
+                retval = retval + (1+gg.m(g));
+            }
         }
 
         return retval;
     }
 
-    // url_from_hash: assembles the final image URL.
-    function url_from_hash(galleryid, image, dir, ext) {
-        ext = ext || dir || image.name.split('.').pop();
-        dir = dir || 'images';
-
-        var path = full_path_from_hash(image.hash);
-        return 'https://' + subdomain_from_url('//' + path, 'a') + '.hitomi.la/' + dir + '/' + path + '.' + ext;
+    function url_from_url(url, base, dir) {
+        return url.replace(/\\/\\/..?\\.(?:gold-usergeneratedcontent\\.net|hitomi\\.la)\\//, '//'+subdomain_from_url(url, base, dir)+'.'+domain2+'/');
     }
 
-    // url_from_url_from_hash: for 'tn' (thumbnail) type URLs.
+    function full_path_from_hash(hash) {
+        return gg.b+gg.s(hash)+'/'+hash;
+    }
+
+    function real_full_path_from_hash(hash) {
+        return hash.replace(/^.*(..)(.)$/, '$2/$1/'+hash);
+    }
+
+    function url_from_hash(galleryid, image, dir, ext) {
+        ext = ext || dir || image.name.split('.').pop();
+        if (dir === 'webp' || dir === 'avif') {
+            dir = '';
+        } else {
+            dir += '/';
+        }
+
+        return 'https://a.'+domain2+'/'+dir+full_path_from_hash(image.hash)+'.'+ext;
+    }
+
     function url_from_url_from_hash(galleryid, image, dir, ext, base) {
         if ('tn' === base) {
-            return url_from_hash(galleryid, image, dir, ext);
+            return url_from_url('https://a.'+domain2+'/'+dir+'/'+real_full_path_from_hash(image.hash)+'.'+ext, base);
         }
-        return url_from_hash(galleryid, image, dir, ext);
+        return url_from_url(url_from_hash(galleryid, image, dir, ext), base, dir);
     }
     """
 
@@ -121,9 +135,8 @@ final class ImageURLResolver: ObservableObject {
         ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(image.haswebp), "hasavif": \(image.hasavif) })
         """
 
-        // Use ORIGINAL quality: dir='images', ext=original file extension.
-        let ext = image.fileExtension
-        let script = "url_from_hash(\(galleryID), \(imageJSON), 'images', '\(ext)')"
+        // Use WebP quality for loading pages since hitomi.la no longer hosts original JPG/PNG formats.
+        let script = "url_from_url_from_hash(\(galleryID), \(imageJSON), 'webp', 'webp')"
 
         guard let result = ctx.evaluateScript(script),
               let urlString = result.toString(),
@@ -150,7 +163,7 @@ final class ImageURLResolver: ObservableObject {
         ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(image.haswebp), "hasavif": \(image.hasavif) })
         """
 
-        let script = "url_from_hash(\(galleryID), \(imageJSON), 'webpbigtn', 'webp')"
+        let script = "url_from_url_from_hash(\(galleryID), \(imageJSON), 'webpbigtn', 'webp', 'tn')"
 
         guard let result = ctx.evaluateScript(script),
               let urlString = result.toString(),
@@ -202,14 +215,16 @@ final class ImageURLResolver: ObservableObject {
             }
         }
 
-        // Evaluate gg.js first (defines the gg() function and variables b, m).
-        ctx.evaluateScript(ggSource)
+        // Evaluate gg.js first.
+        // Prepend 'var gg;' because gg.js runs in strict mode and assumes gg is already declared.
+        let ggScript = "var gg; " + ggSource
+        ctx.evaluateScript(ggScript)
 
         // Then evaluate our common.js helpers that depend on gg().
         ctx.evaluateScript(commonJSSource)
 
         // Verify the context is functional.
-        let test = ctx.evaluateScript("typeof url_from_hash")
+        let test = ctx.evaluateScript("typeof url_from_url_from_hash")
         guard let testResult = test?.toString(), testResult == "function" else {
             throw ImageURLResolverError.invalidGGJS
         }

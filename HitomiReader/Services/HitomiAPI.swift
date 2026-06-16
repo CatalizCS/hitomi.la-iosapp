@@ -132,7 +132,7 @@ final class HitomiAPI: ObservableObject {
     /// - Parameter id: The gallery's numeric ID.
     /// - Returns: A fully-decoded `Gallery` instance.
     func fetchGallery(id: Int) async throws -> Gallery {
-        let urlString = "https://ltn.hitomi.la/galleries/\(id).js"
+        let urlString = "https://ltn.gold-usergeneratedcontent.net/galleries/\(id).js"
         guard let url = URL(string: urlString) else {
             throw HitomiAPIError.invalidURL(urlString)
         }
