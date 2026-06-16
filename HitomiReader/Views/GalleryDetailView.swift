@@ -35,7 +35,7 @@ struct GalleryDetailView: View {
     }
     
     /// Check reading history for this gallery
-    private var historyEntry: HistoryManager.HistoryEntry? {
+    private var historyEntry: HistoryEntry? {
         history.entries.first(where: { $0.galleryID == gallery.id })
     }
     

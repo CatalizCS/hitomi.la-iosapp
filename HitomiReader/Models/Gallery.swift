@@ -89,3 +89,39 @@ extension Gallery {
         var id: String { parody }
     }
 }
+
+// MARK: - Convenience Initializer
+
+extension Gallery {
+    init(
+        id: Int,
+        title: String,
+        japaneseTitle: String? = nil,
+        artists: [Artist]? = nil,
+        groups: [Group]? = nil,
+        parodys: [Parody]? = nil,
+        tags: [Tag]? = nil,
+        characters: [Character]? = nil,
+        language: String? = nil,
+        languageLocalname: String? = nil,
+        languageURL: String? = nil,
+        type: String? = nil,
+        date: String? = nil,
+        files: [GalleryImage]? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.japaneseTitle = japaneseTitle
+        self.language = language
+        self.languageLocalname = languageLocalname
+        self.languageURL = languageURL
+        self.type = type
+        self.date = date
+        self.tags = tags
+        self.artists = artists
+        self.groups = groups
+        self.characters = characters
+        self.parodys = parodys
+        self.files = files
+    }
+}

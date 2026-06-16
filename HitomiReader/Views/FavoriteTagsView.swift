@@ -86,6 +86,7 @@ struct FavoriteTagsView: View {
     }
     
     // MARK: - Tag Row
+    private func tagRow(_ tag: Tag) -> some View {
         NavigationLink(destination: TagSearchResultsView(tag: tag)) {
             HStack(spacing: 14) {
                 // Color indicator

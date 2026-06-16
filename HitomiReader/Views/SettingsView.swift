@@ -44,13 +44,13 @@ struct SettingsView: View {
                         }
                         .tint(.white.opacity(0.6))
                         .listRowBackground(Color.white.opacity(0.04))
-                        .onChange(of: settings.preferredLanguage) { _, _ in
+                        .onChange(of: settings.preferredLanguage) { _ in
                             settings.save()
                         }
                         
                         // Reader Direction
                         Picker(selection: $settings.readerDirection) {
-                            ForEach(SettingsManager.ReaderDirection.allCases, id: \.rawValue) { dir in
+                            ForEach(ReaderDirection.allCases, id: \.rawValue) { dir in
                                 Text(dir.rawValue).tag(dir)
                             }
                         } label: {
@@ -59,7 +59,7 @@ struct SettingsView: View {
                         }
                         .tint(.white.opacity(0.6))
                         .listRowBackground(Color.white.opacity(0.04))
-                        .onChange(of: settings.readerDirection) { _, _ in
+                        .onChange(of: settings.readerDirection) { _ in
                             settings.save()
                         }
                     } header: {

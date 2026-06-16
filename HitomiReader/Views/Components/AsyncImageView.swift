@@ -146,7 +146,7 @@ struct AsyncImageView: View {
         .onDisappear {
             // Keep cache but cancel pending requests
         }
-        .onChange(of: url) { _, newURL in
+        .onChange(of: url) { newURL in
             appeared = false
             if let newURL = newURL {
                 loader.load(url: newURL)

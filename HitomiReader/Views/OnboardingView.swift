@@ -11,7 +11,7 @@ struct OnboardingView: View {
     
     // MARK: - State
     @State private var selectedLanguage: String = "all"
-    @State private var selectedDirection: SettingsManager.ReaderDirection = .rtl
+    @State private var selectedDirection: ReaderDirection = .rtl
     @State private var currentStep: Int = 0
     @State private var animateGradient = false
     @State private var logoScale: CGFloat = 0.5
@@ -168,7 +168,7 @@ struct OnboardingView: View {
             )
             
             VStack(spacing: 12) {
-                ForEach(SettingsManager.ReaderDirection.allCases, id: \.rawValue) { direction in
+                ForEach(ReaderDirection.allCases, id: \.rawValue) { direction in
                     directionButton(direction)
                 }
             }
@@ -225,7 +225,7 @@ struct OnboardingView: View {
     }
     
     // MARK: - Direction Button
-    private func directionButton(_ direction: SettingsManager.ReaderDirection) -> some View {
+    private func directionButton(_ direction: ReaderDirection) -> some View {
         let isSelected = selectedDirection == direction
         let icon: String = {
             switch direction {

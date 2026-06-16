@@ -48,7 +48,7 @@ struct ReaderView: View {
             currentPage = startPage
             Task { await resolveImageURLs() }
         }
-        .onChange(of: currentPage) { _, newPage in
+        .onChange(of: currentPage) { newPage in
             saveProgress(page: newPage)
         }
         .gesture(

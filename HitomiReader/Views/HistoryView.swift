@@ -71,7 +71,7 @@ struct HistoryView: View {
     }
     
     // MARK: - History Row
-    private func historyRow(_ entry: HistoryManager.HistoryEntry) -> some View {
+    private func historyRow(_ entry: HistoryEntry) -> some View {
         HStack(spacing: 14) {
             // Thumbnail
             if let url = entry.thumbnailURL {
@@ -135,7 +135,7 @@ struct HistoryView: View {
     }
     
     // MARK: - Sorted Entries (most recent first)
-    private var sortedEntries: [HistoryManager.HistoryEntry] {
+    private var sortedEntries: [HistoryEntry] {
         history.entries.sorted { $0.timestamp > $1.timestamp }
     }
     
