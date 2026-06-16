@@ -9,7 +9,6 @@ import SwiftUI
 struct FavoriteTagsView: View {
     @EnvironmentObject var favoriteTags: FavoriteTagsManager
     @State private var showClearConfirmation = false
-    @State private var navigateToSearch: Tag? = nil
     
     var body: some View {
         ZStack {
@@ -47,11 +46,6 @@ struct FavoriteTagsView: View {
                 }
             }
             Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will remove all saved favorite tags.")
-        }
-        .navigationDestination(item: $navigateToSearch) { tag in
-            TagSearchResultsView(tag: tag)
         }
     }
     
@@ -92,10 +86,7 @@ struct FavoriteTagsView: View {
     }
     
     // MARK: - Tag Row
-    private func tagRow(_ tag: Tag) -> some View {
-        Button {
-            navigateToSearch = tag
-        } label: {
+        NavigationLink(destination: TagSearchResultsView(tag: tag)) {
             HStack(spacing: 14) {
                 // Color indicator
                 RoundedRectangle(cornerRadius: 4)

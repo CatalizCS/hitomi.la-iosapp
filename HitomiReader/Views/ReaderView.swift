@@ -181,18 +181,18 @@ struct ReaderView: View {
                         }
                 )
                 .simultaneousGesture(
-                    scale > 1.05
-                    ? DragGesture()
+                    DragGesture()
                         .onChanged { value in
+                            guard scale > 1.05 else { return }
                             offset = CGSize(
                                 width: lastOffset.width + value.translation.width,
                                 height: lastOffset.height + value.translation.height
                             )
                         }
                         .onEnded { _ in
+                            guard scale > 1.05 else { return }
                             lastOffset = offset
                         }
-                    : nil
                 )
                 .onTapGesture(count: 2) {
                     withAnimation(.spring(response: 0.3)) {
