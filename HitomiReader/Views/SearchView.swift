@@ -280,7 +280,7 @@ struct SearchView: View {
                     NavigationLink(destination: GalleryDetailView(gallery: gallery)) {
                         GalleryCard(gallery: gallery)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressedScaleButtonStyle())
                     .onAppear {
                         if gallery.id == viewModel.results.last?.id {
                             Task { await viewModel.loadMore() }
@@ -341,16 +341,34 @@ struct SearchView: View {
     
     // MARK: - No Results
     private var noResultsView: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "magnifyingglass")
+        let error = viewModel.errorMessage ?? ""
+        let isDNS = error.lowercased().contains("hostname could not be found") ||
+                    error.lowercased().contains("cannot find host") ||
+                    error.lowercased().contains("code=-1003") ||
+                    error.lowercased().contains("dns lookup")
+        
+        return VStack(spacing: 16) {
+            Image(systemName: isDNS ? "network.slash" : "magnifyingglass")
                 .font(.system(size: 48))
-                .foregroundColor(.white.opacity(0.15))
+                .foregroundColor(isDNS ? Color(hex: "FF2D78") : .white.opacity(0.15))
             
-            Text("No Results Found")
+            Text(isDNS ? "Connection / DNS Blocked" : "No Results Found")
                 .font(.headline)
-                .foregroundColor(.white.opacity(0.5))
+                .foregroundColor(.white)
             
-            if let error = viewModel.errorMessage {
+            if isDNS {
+                VStack(spacing: 8) {
+                    Text("Hitomi.la could not be reached. If you are in Vietnam, your ISP likely blocks it.")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                    Text("Please enable a VPN (e.g. Cloudflare WARP 1.1.1.1) and search again.")
+                        .font(.caption2)
+                        .foregroundColor(Color(hex: "FF2D78"))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 40)
+            } else if !error.isEmpty {
                 Text(error)
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.3))

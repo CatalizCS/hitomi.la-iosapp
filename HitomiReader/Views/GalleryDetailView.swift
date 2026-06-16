@@ -329,6 +329,7 @@ struct GalleryDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Color(hex: "FF2D78").opacity(0.4), radius: 12, y: 4)
             }
+            .buttonStyle(PressedScaleButtonStyle())
             
             // Read from beginning (only if there's history)
             if let _ = historyEntry {
@@ -346,6 +347,7 @@ struct GalleryDetailView: View {
                                 .fill(Color.white.opacity(0.06))
                         )
                 }
+                .buttonStyle(PressedScaleButtonStyle())
             }
         }
     }

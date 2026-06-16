@@ -227,7 +227,7 @@ struct TagSearchResultsView: View {
                             NavigationLink(destination: GalleryDetailView(gallery: gallery)) {
                                 GalleryCard(gallery: gallery)
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(PressedScaleButtonStyle())
                             .onAppear {
                                 if gallery.id == viewModel.results.last?.id {
                                     Task { await viewModel.loadMore() }

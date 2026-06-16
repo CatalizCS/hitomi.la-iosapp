@@ -89,13 +89,23 @@ struct OnboardingView: View {
     
     // MARK: - Animated Background
     private var animatedBackground: some View {
-        LinearGradient(
-            colors: animateGradient
-                ? [Color(hex: "0D0D0D"), Color(hex: "1A1A2E"), Color(hex: "2D1B3D")]
-                : [Color(hex: "1A1A2E"), Color(hex: "0D0D0D"), Color(hex: "1B2D3D")],
-            startPoint: animateGradient ? .topLeading : .bottomTrailing,
-            endPoint: animateGradient ? .bottomTrailing : .topLeading
-        )
+        ZStack {
+            Color(hex: "0D0D0D")
+            
+            LinearGradient(
+                colors: [Color(hex: "1A1A2E"), Color(hex: "2D1B3D").opacity(0.8), .clear],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .opacity(animateGradient ? 0.3 : 0.8)
+            
+            LinearGradient(
+                colors: [Color(hex: "2D1B3D"), Color(hex: "1B2D3D").opacity(0.8), .clear],
+                startPoint: .bottomTrailing,
+                endPoint: .topLeading
+            )
+            .opacity(animateGradient ? 0.8 : 0.3)
+        }
         .ignoresSafeArea()
     }
     
@@ -312,6 +322,7 @@ struct OnboardingView: View {
                             .fill(Color.white.opacity(0.06))
                     )
                 }
+                .buttonStyle(PressedScaleButtonStyle())
                 .transition(.move(edge: .leading).combined(with: .opacity))
             }
             
@@ -344,6 +355,7 @@ struct OnboardingView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: Color(hex: "FF2D78").opacity(0.4), radius: 12, y: 4)
             }
+            .buttonStyle(PressedScaleButtonStyle())
         }
         .padding(.horizontal, 4)
     }

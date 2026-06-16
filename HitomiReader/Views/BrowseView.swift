@@ -139,7 +139,7 @@ struct BrowseView: View {
                     NavigationLink(destination: GalleryDetailView(gallery: gallery)) {
                         GalleryCard(gallery: gallery)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressedScaleButtonStyle())
                     .onAppear {
                         // Infinite scroll: load more when near the end
                         if gallery.id == viewModel.galleries.last?.id {
@@ -182,20 +182,43 @@ struct BrowseView: View {
     
     // MARK: - Error View
     private func errorView(_ message: String) -> some View {
-        VStack(spacing: 20) {
-            Image(systemName: "wifi.exclamationmark")
-                .font(.system(size: 48))
-                .foregroundColor(Color(hex: "FF2D78").opacity(0.6))
+        let isDNS = message.lowercased().contains("hostname could not be found") ||
+                    message.lowercased().contains("cannot find host") ||
+                    message.lowercased().contains("code=-1003") ||
+                    message.lowercased().contains("dns lookup")
+        
+        return VStack(spacing: 20) {
+            Image(systemName: isDNS ? "network.slash" : "wifi.exclamationmark")
+                .font(.system(size: 56))
+                .foregroundColor(Color(hex: "FF2D78"))
             
-            Text("Something went wrong")
-                .font(.headline)
+            Text(isDNS ? "Connection / DNS Blocked" : "Something went wrong")
+                .font(.title3.bold())
                 .foregroundColor(.white)
             
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.5))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            if isDNS {
+                VStack(spacing: 12) {
+                    Text("Hitomi.la could not be reached. If you are in Vietnam or another country with internet censoring, your ISP likely blocks hitomi.la at the DNS level.")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.7))
+                        .multilineTextAlignment(.center)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Label("Use a VPN or Cloudflare WARP (1.1.1.1)", systemImage: "checkmark.shield.fill")
+                        Label("Change device DNS to Google (8.8.8.8) or Cloudflare (1.1.1.1)", systemImage: "checkmark.shield.fill")
+                    }
+                    .font(.caption)
+                    .foregroundColor(Color(hex: "FF2D78"))
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 30)
+            } else {
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.5))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
             
             Button {
                 Task { await viewModel.loadInitial() }
@@ -208,6 +231,7 @@ struct BrowseView: View {
                     .background(Color(hex: "FF2D78"))
                     .clipShape(Capsule())
             }
+            .buttonStyle(PressedScaleButtonStyle())
         }
     }
 }

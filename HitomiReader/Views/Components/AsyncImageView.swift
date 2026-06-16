@@ -126,11 +126,13 @@ struct AsyncImageView: View {
                     .resizable()
                     .aspectRatio(contentMode: contentMode)
                     .opacity(appeared ? 1 : 0)
+                    .scaleEffect(appeared ? 1.0 : 0.96)
                     .onAppear {
-                        withAnimation(.easeIn(duration: 0.25)) {
+                        withAnimation(.easeOut(duration: 0.35)) {
                             appeared = true
                         }
                     }
+                    .id(url)
             } else if loader.hasError {
                 errorPlaceholder
             } else {
