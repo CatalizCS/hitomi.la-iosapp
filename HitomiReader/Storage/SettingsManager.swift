@@ -89,16 +89,16 @@ final class SettingsManager: ObservableObject {
         self.hasCompletedOnboarding = defaults.bool(forKey: Keys.hasCompletedOnboarding)
         self.itemsPerPage = defaults.integer(forKey: Keys.itemsPerPage)
 
-        if self.itemsPerPage == 0 {
-            self.itemsPerPage = NozomiParser.defaultPageSize
-        }
-
         if let dirRaw = defaults.string(forKey: Keys.readerDirection),
            let dir = ReaderDirection(rawValue: dirRaw) {
             self.readerDirection = dir
         } else {
             // Default: Right-to-left (manga style).
             self.readerDirection = .rtl
+        }
+
+        if self.itemsPerPage == 0 {
+            self.itemsPerPage = NozomiParser.defaultPageSize
         }
     }
 
