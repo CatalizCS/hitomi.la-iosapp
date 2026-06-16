@@ -46,7 +46,8 @@ final class AsyncImageLoader: ObservableObject {
     private static let session: URLSession = {
         let config = URLSessionConfiguration.default
         config.httpAdditionalHeaders = [
-            "Referer": "https://hitomi.la/"
+            "Referer": "https://hitomi.la/",
+            "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1"
         ]
         config.urlCache = URLCache(
             memoryCapacity: 50 * 1024 * 1024,

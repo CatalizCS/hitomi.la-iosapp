@@ -362,7 +362,7 @@ struct SearchView: View {
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
-                    Text("Please enable a VPN (e.g. Cloudflare WARP 1.1.1.1) and search again.")
+                    Text("Please enable a system-wide VPN (e.g. Cloudflare WARP app) and search again. Browser-only extensions will not work.")
                         .font(.caption2)
                         .foregroundColor(Color(hex: "FF2D78"))
                         .multilineTextAlignment(.center)

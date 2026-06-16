@@ -198,14 +198,14 @@ struct BrowseView: View {
             
             if isDNS {
                 VStack(spacing: 12) {
-                    Text("Hitomi.la could not be reached. If you are in Vietnam or another country with internet censoring, your ISP likely blocks hitomi.la at the DNS level.")
+                    Text("Hitomi.la could not be reached. If you are in Vietnam or another country with internet censoring, your ISP likely blocks hitomi.la. Note: browser-only extension VPNs will NOT work for native apps. You must use a system-wide VPN.")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
                     
                     VStack(alignment: .leading, spacing: 6) {
-                        Label("Use a VPN or Cloudflare WARP (1.1.1.1)", systemImage: "checkmark.shield.fill")
-                        Label("Change device DNS to Google (8.8.8.8) or Cloudflare (1.1.1.1)", systemImage: "checkmark.shield.fill")
+                        Label("Use a device-wide VPN or Cloudflare WARP app", systemImage: "checkmark.shield.fill")
+                        Label("Change system DNS to Google (8.8.8.8) or Cloudflare (1.1.1.1)", systemImage: "checkmark.shield.fill")
                     }
                     .font(.caption)
                     .foregroundColor(Color(hex: "FF2D78"))
