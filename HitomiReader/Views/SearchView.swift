@@ -21,7 +21,7 @@ class SearchViewModel: ObservableObject {
     
     private var suggestionsTask: Task<Void, Never>?
     private var currentPage = 0
-    private let perPage = 25
+    private var perPage: Int { SettingsManager.shared.itemsPerPage }
     private var hasMorePages = true
     private var allIDs: [Int] = []
     

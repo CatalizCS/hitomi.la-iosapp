@@ -17,7 +17,7 @@ class BrowseViewModel: ObservableObject {
     @Published var sortOrder: SortOrder = .latest
     
     private var currentPage = 0
-    private let perPage = 25
+    private var perPage: Int { SettingsManager.shared.itemsPerPage }
     private var loadedIDs: Set<Int> = []
     private var allIDs: [Int] = []
     private var hasMorePages = true

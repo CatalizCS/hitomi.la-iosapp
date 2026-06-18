@@ -19,7 +19,7 @@ struct NozomiParser {
     static let bytesPerID = 4
 
     /// Number of gallery IDs to fetch per page.
-    static let defaultPageSize = 25
+    static let defaultPageSize = 60
 
     // MARK: - Binary Parsing
 

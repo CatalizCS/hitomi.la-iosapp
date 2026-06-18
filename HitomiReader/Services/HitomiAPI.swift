@@ -199,8 +199,8 @@ final class HitomiAPI: ObservableObject {
         var results = [Gallery]()
         results.reserveCapacity(ids.count)
 
-        // Process in batches of 6 to avoid network congestion / socket drops on mobile
-        let batchSize = 6
+        // Process in batches of 10 to avoid network congestion / socket drops on mobile
+        let batchSize = 10
         for i in stride(from: 0, to: ids.count, by: batchSize) {
             let end = min(i + batchSize, ids.count)
             let batchIDs = Array(ids[i..<end])

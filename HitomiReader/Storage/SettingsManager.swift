@@ -97,7 +97,7 @@ final class SettingsManager: ObservableObject {
             self.readerDirection = .rtl
         }
 
-        if self.itemsPerPage == 0 {
+        if self.itemsPerPage < 60 {
             self.itemsPerPage = NozomiParser.defaultPageSize
         }
     }
