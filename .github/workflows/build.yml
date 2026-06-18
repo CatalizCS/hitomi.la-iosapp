@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Unsigned IPA
@@ -44,3 +47,14 @@ jobs:
         with:
           name: HitomiReader-IPA
           path: build/HitomiReader.ipa
+
+      - name: Release Unsigned IPA
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Unsigned IPA"
+          body: "Automated build of the unsigned IPA."
+          files: build/HitomiReader.ipa
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
