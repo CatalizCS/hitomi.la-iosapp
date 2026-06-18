@@ -17,7 +17,7 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoadingMore = false
     
-    private var currentPage = 1
+    private var currentPage = 0
     private let perPage = 25
     private var hasMorePages = true
     
@@ -50,7 +50,7 @@ class SearchViewModel: ObservableObject {
         isSearching = true
         hasSearched = true
         errorMessage = nil
-        currentPage = 1
+        currentPage = 0
         results.removeAll()
         hasMorePages = true
         
@@ -80,7 +80,7 @@ class SearchViewModel: ObservableObject {
         isSearching = true
         hasSearched = true
         errorMessage = nil
-        currentPage = 1
+        currentPage = 0
         results.removeAll()
         hasMorePages = true
         

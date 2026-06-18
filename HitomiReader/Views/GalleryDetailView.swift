@@ -28,11 +28,7 @@ struct GalleryDetailView: View {
         return gallery.title
     }
     
-    private var coverURL: URL? {
-        guard let firstImage = gallery.files?.first else { return nil }
-        let path = GalleryCard.thumbnailPath(hash: firstImage.hash)
-        return URL(string: "https://tn.hitomi.la/bigtn/\(path).jpg")
-    }
+    @State private var coverURL: URL? = nil
     
     /// Check reading history for this gallery
     private var historyEntry: HistoryEntry? {
@@ -65,6 +61,19 @@ struct GalleryDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showReader) {
             ReaderView(gallery: gallery, startPage: startPage)
+        }
+        .onAppear {
+            Task {
+                if coverURL == nil, let firstImage = gallery.files?.first {
+                    do {
+                        try await ImageURLResolver.shared.ensureReady()
+                        let resolved = try ImageURLResolver.shared.resolveThumbnailURL(galleryID: gallery.id, image: firstImage)
+                        self.coverURL = resolved
+                    } catch {
+                        print("Failed to resolve cover: \(error)")
+                    }
+                }
+            }
         }
     }
     

@@ -13,7 +13,7 @@ class BrowseViewModel: ObservableObject {
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
     
-    private var currentPage = 1
+    private var currentPage = 0
     private let perPage = 25
     private var loadedIDs: Set<Int> = []
     private var allIDs: [Int] = []
@@ -23,7 +23,7 @@ class BrowseViewModel: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         errorMessage = nil
-        currentPage = 1
+        currentPage = 0
         loadedIDs.removeAll()
         allIDs.removeAll()
         galleries.removeAll()

@@ -72,6 +72,12 @@ final class HitomiAPI: ObservableObject {
 
         let (data, response) = try await session.data(for: request)
 
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw HitomiAPIError.httpError(statusCode: statusCode, galleryID: -1)
+        }
+
         // Parse the binary nozomi data.
         let ids = NozomiParser.parseNozomiData(data)
 
@@ -112,6 +118,12 @@ final class HitomiAPI: ObservableObject {
         request.setValue(range.header, forHTTPHeaderField: "Range")
 
         let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw HitomiAPIError.httpError(statusCode: statusCode, galleryID: -1)
+        }
 
         let ids = NozomiParser.parseNozomiData(data)
 

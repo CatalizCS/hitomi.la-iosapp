@@ -10,11 +10,7 @@ struct GalleryCard: View {
     let gallery: Gallery
     
     /// Computed thumbnail URL from the first image hash
-    private var thumbnailURL: URL? {
-        guard let firstImage = gallery.files?.first else { return nil }
-        let path = Self.thumbnailPath(hash: firstImage.hash)
-        return URL(string: "https://tn.hitomi.la/bigtn/\(path).jpg")
-    }
+    @State private var thumbnailURL: URL? = nil
     
     /// Convert hash to thumbnail path: hash → "c/ab/hash" where ab = last 2 chars, c = 3rd-to-last char
     static func thumbnailPath(hash: String) -> String {
@@ -88,6 +84,19 @@ struct GalleryCard: View {
         .aspectRatio(0.7, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
+        .onAppear {
+            Task {
+                if thumbnailURL == nil, let firstImage = gallery.files?.first {
+                    do {
+                        try await ImageURLResolver.shared.ensureReady()
+                        let resolved = try ImageURLResolver.shared.resolveThumbnailURL(galleryID: gallery.id, image: firstImage)
+                        self.thumbnailURL = resolved
+                    } catch {
+                        print("Failed to resolve thumbnail: \(error)")
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Display Title
