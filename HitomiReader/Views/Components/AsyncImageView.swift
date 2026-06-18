@@ -188,17 +188,25 @@ struct AsyncImageView: View {
     
     // MARK: - Error Placeholder
     private var errorPlaceholder: some View {
-        ZStack {
-            Color(hex: "1A1A2E")
-            VStack(spacing: 8) {
-                Image(systemName: "photo.badge.exclamationmark")
-                    .font(.title2)
-                    .foregroundColor(.white.opacity(0.3))
-                Text("Failed to load")
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.2))
+        Button {
+            if let url = url {
+                appeared = false
+                loader.load(url: url)
+            }
+        } label: {
+            ZStack {
+                Color(hex: "1A1A2E")
+                VStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.white.opacity(0.6))
+                    Text("Failed to load. Tap to retry.")
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.5))
+                }
             }
         }
+        .buttonStyle(.plain)
     }
 }
 

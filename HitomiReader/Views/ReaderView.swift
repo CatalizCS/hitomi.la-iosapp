@@ -382,9 +382,13 @@ struct ReaderView: View {
         
         isLoadingURLs = false
         
-        // Resolve remaining in background
+        // Give the active page a head start to load first
+        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5 seconds
+        
+        // Resolve remaining in background with a delay to prevent queue flooding
         for index in 0..<pageCount where imageURLs[index] == nil {
             await resolveURL(for: index)
+            try? await Task.sleep(nanoseconds: 400_000_000) // 400ms delay
         }
     }
     
