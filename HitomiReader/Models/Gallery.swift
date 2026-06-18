@@ -44,6 +44,35 @@ struct Gallery: Codable, Identifiable, Hashable {
         case files
     }
 
+    // MARK: - Decodable
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        // Decode id as String or Int
+        if let idInt = try? container.decode(Int.self, forKey: .id) {
+            self.id = idInt
+        } else if let idStr = try? container.decode(String.self, forKey: .id), let idInt = Int(idStr) {
+            self.id = idInt
+        } else {
+            throw DecodingError.typeMismatch(Int.self, DecodingError.Context(codingPath: container.codingPath + [CodingKeys.id], debugDescription: "Expected Int or String representing Int for id"))
+        }
+
+        self.title = try container.decode(String.self, forKey: .title)
+        self.japaneseTitle = try container.decodeIfPresent(String.self, forKey: .japaneseTitle)
+        self.language = try container.decodeIfPresent(String.self, forKey: .language)
+        self.languageLocalname = try container.decodeIfPresent(String.self, forKey: .languageLocalname)
+        self.languageURL = try container.decodeIfPresent(String.self, forKey: .languageURL)
+        self.type = try container.decodeIfPresent(String.self, forKey: .type)
+        self.date = try container.decodeIfPresent(String.self, forKey: .date)
+        self.tags = try container.decodeIfPresent([Tag].self, forKey: .tags)
+        self.artists = try container.decodeIfPresent([Artist].self, forKey: .artists)
+        self.groups = try container.decodeIfPresent([Group].self, forKey: .groups)
+        self.characters = try container.decodeIfPresent([Character].self, forKey: .characters)
+        self.parodys = try container.decodeIfPresent([Parody].self, forKey: .parodys)
+        self.files = try container.decodeIfPresent([GalleryImage].self, forKey: .files)
+    }
+
     // MARK: - Convenience
 
     /// Best available title — prefers Japanese title when present.

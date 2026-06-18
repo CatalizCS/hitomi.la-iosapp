@@ -72,13 +72,22 @@ struct NozomiParser {
     ///   - language: Optional language filter.
     /// - Returns: Full URL string.
     static func tagURL(tagType: String, tagValue: String, language: String? = nil) -> String {
-        let suffix: String
-        if let lang = language, !lang.isEmpty, lang.lowercased() != "all" {
-            suffix = "\(tagValue)-\(lang.lowercased()).nozomi"
-        } else {
-            suffix = "\(tagValue)-all.nozomi"
+        let lang = (language?.lowercased() == nil || language?.lowercased() == "all" || language?.isEmpty == true) ? "all" : language!.lowercased()
+        
+        let area: String
+        let tagPrefix: String
+        
+        switch tagType.lowercased() {
+        case "male", "female":
+            area = "tag"
+            tagPrefix = "\(tagType.lowercased()):"
+        default:
+            area = tagType.lowercased()
+            tagPrefix = ""
         }
-        return "\(baseURL)/n/\(tagType)/\(suffix)"
+        
+        let encodedTagValue = tagValue.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tagValue
+        return "\(baseURL)/n/\(area)/\(tagPrefix)\(encodedTagValue)-\(lang).nozomi"
     }
 
     // MARK: - Range Header

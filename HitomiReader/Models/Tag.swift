@@ -77,11 +77,14 @@ struct Tag: Codable, Hashable, Identifiable {
         tag = try container.decode(String.self, forKey: .tag)
         url = try container.decode(String.self, forKey: .url)
 
-        // Determine gender from the presence of "female" or "male" key.
-        if container.contains(.female) {
-            gender = .female
-        } else if container.contains(.male) {
+        // Determine gender by checking which key contains a non-empty string.
+        let femaleVal = try? container.decodeIfPresent(String.self, forKey: .female)
+        let maleVal = try? container.decodeIfPresent(String.self, forKey: .male)
+
+        if let maleVal = maleVal, !maleVal.isEmpty {
             gender = .male
+        } else if let femaleVal = femaleVal, !femaleVal.isEmpty {
+            gender = .female
         } else {
             gender = nil
         }

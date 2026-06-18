@@ -12,8 +12,8 @@ struct GalleryImage: Codable, Identifiable, Hashable {
     let hash: String       // Hex hash string used for URL resolution
     let width: Int
     let height: Int
-    let haswebp: Int       // 0 or 1
-    let hasavif: Int       // 0 or 1
+    let haswebp: Int?      // 0 or 1 — may be absent in newer/standard entries
+    let hasavif: Int?      // 0 or 1 — may be absent
     let hasjxl: Int?       // 0 or 1 — may be absent in older entries
 
     // MARK: - Identifiable
@@ -34,7 +34,7 @@ struct GalleryImage: Codable, Identifiable, Hashable {
     }
 
     /// Whether a WebP variant is available on the CDN.
-    var webpAvailable: Bool { haswebp == 1 }
+    var webpAvailable: Bool { haswebp == 1 || haswebp == nil } // Defaults to true since hitomi.la converts all images to WebP now
 
     /// Whether an AVIF variant is available on the CDN.
     var avifAvailable: Bool { hasavif == 1 }
