@@ -203,28 +203,12 @@ class SearchViewModel: ObservableObject {
                 return
             }
             
-            await withTaskGroup(of: Gallery?.self) { group in
-                for id in pageIDs {
-                    group.addTask {
-                        try? await HitomiAPI.shared.fetchGalleryInfo(id: id)
-                    }
-                }
-                
-                var newGalleries: [Gallery] = []
-                for await gallery in group {
-                    if let gallery = gallery {
-                        newGalleries.append(gallery)
-                    }
-                }
-                
-                let idOrder = Dictionary(uniqueKeysWithValues: pageIDs.enumerated().map { ($1, $0) })
-                newGalleries.sort { (idOrder[$0.id] ?? 0) < (idOrder[$1.id] ?? 0) }
-                
-                if currentPage == 0 {
-                    results = newGalleries
-                } else {
-                    results.append(contentsOf: newGalleries)
-                }
+            let newGalleries = await HitomiAPI.shared.fetchGalleries(ids: pageIDs)
+            
+            if currentPage == 0 {
+                results = newGalleries
+            } else {
+                results.append(contentsOf: newGalleries)
             }
             
             hasMorePages = endIndex < allIDs.count

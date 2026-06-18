@@ -196,28 +196,38 @@ final class HitomiAPI: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
-        return await withTaskGroup(of: Gallery?.self) { group in
-            for id in ids {
-                group.addTask { [weak self] in
-                    try? await self?.fetchGallery(id: id)
+        var results = [Gallery]()
+        results.reserveCapacity(ids.count)
+
+        // Process in batches of 6 to avoid network congestion / socket drops on mobile
+        let batchSize = 6
+        for i in stride(from: 0, to: ids.count, by: batchSize) {
+            let end = min(i + batchSize, ids.count)
+            let batchIDs = Array(ids[i..<end])
+
+            let batchGalleries = await withTaskGroup(of: Gallery?.self) { group in
+                for id in batchIDs {
+                    group.addTask { [weak self] in
+                        try? await self?.fetchGallery(id: id)
+                    }
                 }
-            }
 
-            var galleries = [Gallery]()
-            galleries.reserveCapacity(ids.count)
-
-            for await gallery in group {
-                if let gallery = gallery {
-                    galleries.append(gallery)
+                var fetched = [Gallery]()
+                for await gallery in group {
+                    if let gallery = gallery {
+                        fetched.append(gallery)
+                    }
                 }
+                return fetched
             }
-
-            // Re-sort to match the original .nozomi ordering.
-            let idOrder = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, $0) })
-            galleries.sort { (idOrder[$0.id] ?? Int.max) < (idOrder[$1.id] ?? Int.max) }
-
-            return galleries
+            results.append(contentsOf: batchGalleries)
         }
+
+        // Re-sort to match the original .nozomi ordering.
+        let idOrder = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, $0) })
+        results.sort { (idOrder[$0.id] ?? Int.max) < (idOrder[$1.id] ?? Int.max) }
+
+        return results
     }
 
     // MARK: - Convenience: Full Page Fetch

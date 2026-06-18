@@ -90,23 +90,13 @@ class BrowseViewModel: ObservableObject {
             
             allIDs.append(contentsOf: ids)
             
-            // Fetch gallery info for each ID concurrently
-            await withTaskGroup(of: Gallery?.self) { group in
-                for id in ids {
-                    guard !loadedIDs.contains(id) else { continue }
-                    loadedIDs.insert(id)
-                    
-                    group.addTask {
-                        try? await HitomiAPI.shared.fetchGalleryInfo(id: id)
-                    }
-                }
-                
-                for await gallery in group {
-                    if let gallery = gallery {
-                        galleries.append(gallery)
-                    }
-                }
+            let newIDs = ids.filter { !loadedIDs.contains($0) }
+            for id in newIDs {
+                loadedIDs.insert(id)
             }
+            
+            let newGalleries = await HitomiAPI.shared.fetchGalleries(ids: newIDs)
+            galleries.append(contentsOf: newGalleries)
             
             // Sort galleries to match ID order
             let idOrder = Dictionary(uniqueKeysWithValues: allIDs.enumerated().map { ($1, $0) })
