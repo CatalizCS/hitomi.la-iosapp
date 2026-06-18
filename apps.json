@@ -1,0 +1,25 @@
+{
+  "name": "HitomiReader Repository",
+  "identifier": "com.hitomireader.repo",
+  "sourceURL": "https://raw.githubusercontent.com/CatalizCS/hitomi.la-iosapp/main/apps.json",
+  "apps": [
+    {
+      "name": "HitomiReader",
+      "bundleIdentifier": "com.hitomireader.app",
+      "developerName": "CatalizCS",
+      "subtitle": "Native hitomi.la reader for iOS",
+      "localizedDescription": "A beautiful, premium, and performant native hitomi.la reader for iOS built with SwiftUI. Supports webp image viewing, advanced search filters, reading history, and favorited tags.",
+      "iconURL": "https://raw.githubusercontent.com/CatalizCS/hitomi.la-iosapp/main/HitomiReader/Assets.xcassets/AppIcon.appiconset/Icon-1024.png",
+      "tintColor": "#FF2D78",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "date": "2026-06-18",
+          "localizedDescription": "Initial stable release with dynamic CDN resolution, high-performance image loading, and custom transition animations.",
+          "downloadURL": "https://github.com/CatalizCS/hitomi.la-iosapp/releases/download/latest/HitomiReader.ipa",
+          "size": 6291456
+        }
+      ]
+    }
+  ]
+}
