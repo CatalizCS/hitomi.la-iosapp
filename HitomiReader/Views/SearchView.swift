@@ -256,6 +256,9 @@ struct SearchView: View {
                 // MARK: - Type Filter
                 typeFilter
                 
+                Divider()
+                    .background(Color.white.opacity(0.08))
+                
                 // MARK: - Content
                 ZStack(alignment: .top) {
                     if viewModel.isSearching && viewModel.results.isEmpty {
@@ -296,7 +299,7 @@ struct SearchView: View {
             }
         }
         .navigationTitle("Search")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: viewModel.searchText) { _ in
             viewModel.updateSuggestions()
         }
@@ -379,7 +382,8 @@ struct SearchView: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
         .animation(.easeInOut(duration: 0.2), value: isSearchFocused)
     }
     
@@ -392,7 +396,8 @@ struct SearchView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.top, 4)
+            .padding(.bottom, 8)
         }
     }
     

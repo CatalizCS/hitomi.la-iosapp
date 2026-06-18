@@ -22,9 +22,9 @@ struct ReaderView: View {
     @State private var imageURLs: [Int: URL] = [:]
     @State private var isLoadingURLs = true
     
-    // Zoom state
-    @State private var currentZoom: CGFloat = 1.0
-    @State private var totalZoom: CGFloat = 1.0
+    // Zoom & Tap Navigation State
+    @State private var isZoomed: Bool = false
+    @State private var programmaticallyRequestedPage: Int? = nil
     
     private var pageCount: Int { gallery.files?.count ?? 0 }
     
@@ -51,15 +51,22 @@ struct ReaderView: View {
         }
         .onChange(of: currentPage) { newPage in
             saveProgress(page: newPage)
+            isZoomed = false // Reset zoom state when page changes
         }
-        .gesture(
-            TapGesture()
-                .onEnded {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showOverlay.toggle()
-                    }
+        .onTapGesture(coordinateSpace: .global) { location in
+            let screenWidth = UIScreen.main.bounds.width
+            let x = location.x
+            
+            if x < screenWidth * 0.25 {
+                handleLeftTap()
+            } else if x > screenWidth * 0.75 {
+                handleRightTap()
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showOverlay.toggle()
                 }
-        )
+            }
+        }
     }
     
     // MARK: - Reader Content (Direction Switch)
@@ -111,6 +118,9 @@ struct ReaderView: View {
                             .frame(maxWidth: .infinity)
                             .onAppear {
                                 currentPage = index
+                                if programmaticallyRequestedPage == index {
+                                    programmaticallyRequestedPage = nil
+                                }
                             }
                     }
                 }
@@ -119,6 +129,13 @@ struct ReaderView: View {
             .onAppear {
                 if startPage > 0 {
                     proxy.scrollTo(startPage, anchor: .top)
+                }
+            }
+            .onChange(of: programmaticallyRequestedPage) { targetPage in
+                if let targetPage = targetPage {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        proxy.scrollTo(targetPage, anchor: .top)
+                    }
                 }
             }
         }
@@ -132,6 +149,7 @@ struct ReaderView: View {
             ZoomableImageView(
                 url: imageURLs[index],
                 index: index,
+                isZoomed: $isZoomed,
                 onResolve: {
                     Task { await resolveURL(for: index) }
                 }
@@ -147,6 +165,7 @@ struct ReaderView: View {
     struct ZoomableImageView: View {
         let url: URL?
         let index: Int
+        @Binding var isZoomed: Bool
         let onResolve: () -> Void
         
         @State private var scale: CGFloat = 1.0
@@ -201,6 +220,9 @@ struct ReaderView: View {
                                     scale = 2.5
                                 }
                             }
+                        }
+                        .onChange(of: scale) { newValue in
+                            isZoomed = newValue > 1.05
                         }
                 } else {
                     VStack(spacing: 12) {
@@ -399,6 +421,52 @@ struct ReaderView: View {
             lastPage: page,
             totalPages: pageCount
         )
+    }
+    
+    // MARK: - Tap Navigation Handlers
+    
+    private func handleLeftTap() {
+        guard !isZoomed else { return }
+        switch settings.readerDirection {
+        case .rtl:
+            goToNextPage()
+        case .ltr, .vertical:
+            goToPreviousPage()
+        }
+    }
+    
+    private func handleRightTap() {
+        guard !isZoomed else { return }
+        switch settings.readerDirection {
+        case .rtl:
+            goToPreviousPage()
+        case .ltr, .vertical:
+            goToNextPage()
+        }
+    }
+    
+    private func goToNextPage() {
+        if currentPage < pageCount - 1 {
+            if settings.readerDirection == .vertical {
+                programmaticallyRequestedPage = currentPage + 1
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentPage += 1
+                }
+            }
+        }
+    }
+    
+    private func goToPreviousPage() {
+        if currentPage > 0 {
+            if settings.readerDirection == .vertical {
+                programmaticallyRequestedPage = currentPage - 1
+            } else {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentPage -= 1
+                }
+            }
+        }
     }
 }
 
