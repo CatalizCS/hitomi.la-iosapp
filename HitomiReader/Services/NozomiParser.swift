@@ -54,14 +54,21 @@ struct NozomiParser {
 
     /// Builds the .nozomi URL for a language-specific index.
     ///
-    /// - Parameter language: Language string (e.g. "english", "japanese").
-    ///                       Pass `nil` or `"all"` for the global index.
+    /// - Parameters:
+    ///   - language: Language string.
+    ///   - orderBy: Sort order (e.g. "today", "week", "month", "year").
     /// - Returns: Full URL string.
-    static func indexURL(language: String?) -> String {
-        if let lang = language, !lang.isEmpty, lang.lowercased() != "all" {
-            return "\(baseURL)/index-\(lang.lowercased()).nozomi"
+    static func indexURL(language: String?, orderBy: String? = nil) -> String {
+        let lang = (language?.lowercased() == nil || language?.lowercased() == "all" || language?.isEmpty == true) ? "all" : language!.lowercased()
+        
+        let path: String
+        if let order = orderBy, !order.isEmpty {
+            path = "popular/\(order)"
+        } else {
+            path = "index"
         }
-        return "\(baseURL)/index-all.nozomi"
+        
+        return "\(baseURL)/n/\(path)-\(lang).nozomi"
     }
 
     /// Builds the .nozomi URL for a tag-filtered list.
@@ -70,8 +77,9 @@ struct NozomiParser {
     ///   - tagType: The tag type path (e.g. "female", "male", "tag", "artist", "group").
     ///   - tagValue: The tag name (e.g. "schoolgirl", "glasses").
     ///   - language: Optional language filter.
+    ///   - orderBy: Sort order (e.g. "today", "week", "month", "year").
     /// - Returns: Full URL string.
-    static func tagURL(tagType: String, tagValue: String, language: String? = nil) -> String {
+    static func tagURL(tagType: String, tagValue: String, language: String? = nil, orderBy: String? = nil) -> String {
         let lang = (language?.lowercased() == nil || language?.lowercased() == "all" || language?.isEmpty == true) ? "all" : language!.lowercased()
         
         let area: String
@@ -86,8 +94,13 @@ struct NozomiParser {
             tagPrefix = ""
         }
         
+        var orderPath = ""
+        if let order = orderBy, !order.isEmpty {
+            orderPath = "popular/\(order)/"
+        }
+        
         let encodedTagValue = tagValue.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? tagValue
-        return "\(baseURL)/n/\(area)/\(tagPrefix)\(encodedTagValue)-\(lang).nozomi"
+        return "\(baseURL)/n/\(area)/\(orderPath)\(tagPrefix)\(encodedTagValue)-\(lang).nozomi"
     }
 
     // MARK: - Range Header

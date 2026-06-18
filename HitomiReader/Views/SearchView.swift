@@ -17,11 +17,13 @@ class SearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoadingMore = false
     @Published var tagSuggestions: [Tag] = []
+    @Published var sortOrder: SortOrder = .latest
     
     private var suggestionsTask: Task<Void, Never>?
     private var currentPage = 0
     private let perPage = 25
     private var hasMorePages = true
+    private var allIDs: [Int] = []
     
     enum TagFilterType: String, CaseIterable {
         case all = "All"
@@ -55,12 +57,10 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         currentPage = 0
         results.removeAll()
+        allIDs.removeAll()
         hasMorePages = true
         
-        // Parse "type:name" format
-        let (type, name) = parseQuery(query)
-        
-        await fetchResults(type: type, name: name)
+        await fetchResults()
         isSearching = false
     }
     
@@ -69,10 +69,7 @@ class SearchViewModel: ObservableObject {
         isLoadingMore = true
         currentPage += 1
         
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let (type, name) = parseQuery(query)
-        
-        await fetchResults(type: type, name: name)
+        await fetchResults()
         isLoadingMore = false
     }
     
@@ -86,9 +83,10 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         currentPage = 0
         results.removeAll()
+        allIDs.removeAll()
         hasMorePages = true
         
-        await fetchResults(type: type, name: name)
+        await fetchResults()
         isSearching = false
     }
     
@@ -115,36 +113,78 @@ class SearchViewModel: ObservableObject {
         }
     }
     
-    private func parseQuery(_ query: String) -> (type: String, name: String) {
-        if query.contains(":") {
-            let parts = query.split(separator: ":", maxSplits: 1)
-            if parts.count == 2 {
-                return (String(parts[0]).lowercased(), String(parts[1]).lowercased())
+    private func parseQueryTags(_ query: String) -> [Tag] {
+        let parts = query.split(separator: " ")
+        var tags: [Tag] = []
+        for part in parts {
+            let tagStr = String(part).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !tagStr.isEmpty else { continue }
+            
+            var type = selectedType == .all ? "tag" : selectedType.apiType
+            var name = tagStr
+            
+            if tagStr.contains(":") {
+                let subParts = tagStr.split(separator: ":", maxSplits: 1)
+                if subParts.count == 2 {
+                    let typePart = String(subParts[0]).lowercased()
+                    let namePart = String(subParts[1])
+                    
+                    let validTypes = ["artist", "group", "type", "language", "series", "character", "male", "female", "tag"]
+                    if validTypes.contains(typePart) {
+                        type = typePart
+                        name = namePart
+                    }
+                }
             }
+            
+            let normalizedName = name.replacingOccurrences(of: " ", with: "_").lowercased()
+            let gender = Tag.Gender(rawValue: type)
+            let tagUrl = "/tag/\(type == "tag" ? "" : type + ":")\(normalizedName)-all.html"
+            
+            tags.append(Tag(tag: normalizedName, url: tagUrl, gender: gender))
         }
-        
-        // Use the selected filter type
-        let type = selectedType == .all ? "tag" : selectedType.apiType
-        return (type, query.lowercased())
+        return tags
     }
     
-    private func fetchResults(type: String, name: String) async {
+    private func fetchResults() async {
         do {
-            let ids = try await HitomiAPI.shared.fetchGalleryIDsByTag(
-                type: type,
-                name: name,
-                page: currentPage,
-                perPage: perPage
-            )
+            if allIDs.isEmpty {
+                let tags = parseQueryTags(searchText)
+                guard !tags.isEmpty else {
+                    hasMorePages = false
+                    return
+                }
+                
+                let ids = try await HitomiAPI.shared.fetchGalleryIDsByTags(
+                    tags: tags,
+                    language: SettingsManager.shared.preferredLanguage,
+                    orderBy: sortOrder.apiValue
+                )
+                
+                allIDs = ids
+                
+                if allIDs.isEmpty {
+                    hasMorePages = false
+                    return
+                }
+            }
             
-            if ids.isEmpty {
+            let startIndex = currentPage * perPage
+            guard startIndex < allIDs.count else {
                 hasMorePages = false
                 return
             }
             
-            // Fetch gallery info concurrently
+            let endIndex = min(startIndex + perPage, allIDs.count)
+            let pageIDs = Array(allIDs[startIndex..<endIndex])
+            
+            if pageIDs.isEmpty {
+                hasMorePages = false
+                return
+            }
+            
             await withTaskGroup(of: Gallery?.self) { group in
-                for id in ids {
+                for id in pageIDs {
                     group.addTask {
                         try? await HitomiAPI.shared.fetchGalleryInfo(id: id)
                     }
@@ -157,15 +197,21 @@ class SearchViewModel: ObservableObject {
                     }
                 }
                 
-                // Sort to match ID order
-                let idOrder = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($1, $0) })
+                let idOrder = Dictionary(uniqueKeysWithValues: pageIDs.enumerated().map { ($1, $0) })
                 newGalleries.sort { (idOrder[$0.id] ?? 0) < (idOrder[$1.id] ?? 0) }
                 
-                results.append(contentsOf: newGalleries)
+                if currentPage == 0 {
+                    results = newGalleries
+                } else {
+                    results.append(contentsOf: newGalleries)
+                }
             }
+            
+            hasMorePages = endIndex < allIDs.count
             
         } catch {
             errorMessage = error.localizedDescription
+            hasMorePages = false
         }
     }
 }
@@ -227,12 +273,38 @@ struct SearchView: View {
                             .transition(.opacity)
                     }
                 }
-            }
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.large)
         .onChange(of: viewModel.searchText) { _ in
             viewModel.updateSuggestions()
+        }
+        .onChange(of: viewModel.selectedType) { _ in
+            Task { await viewModel.search() }
+        }
+        .onChange(of: viewModel.sortOrder) { _ in
+            Task { await viewModel.search() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    ForEach(SortOrder.allCases) { order in
+                        Button {
+                            viewModel.sortOrder = order
+                        } label: {
+                            HStack {
+                                Text(order.displayName)
+                                if viewModel.sortOrder == order {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                        .foregroundColor(Color(hex: "FF2D78"))
+                }
+            }
         }
     }
     

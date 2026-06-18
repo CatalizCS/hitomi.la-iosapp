@@ -54,13 +54,15 @@ final class HitomiAPI: ObservableObject {
     ///   - language: Language filter (e.g. "english"). Pass nil for all.
     ///   - page: Zero-indexed page number.
     ///   - pageSize: Number of IDs per page.
+    ///   - orderBy: Sort order (e.g. "today", "week", "month", "year").
     /// - Returns: A tuple of (galleryIDs, estimatedTotalCount).
     func fetchGalleryIDs(
         language: String?,
         page: Int,
-        pageSize: Int = NozomiParser.defaultPageSize
+        pageSize: Int = NozomiParser.defaultPageSize,
+        orderBy: String? = nil
     ) async throws -> (ids: [Int], totalCount: Int?) {
-        let urlString = NozomiParser.indexURL(language: language)
+        let urlString = NozomiParser.indexURL(language: language, orderBy: orderBy)
         guard let url = URL(string: urlString) else {
             throw HitomiAPIError.invalidURL(urlString)
         }
@@ -95,17 +97,20 @@ final class HitomiAPI: ObservableObject {
     ///   - language: Optional language filter.
     ///   - page: Zero-indexed page number.
     ///   - pageSize: Number of IDs per page.
+    ///   - orderBy: Sort order (e.g. "today", "week", "month", "year").
     /// - Returns: A tuple of (galleryIDs, estimatedTotalCount).
     func fetchGalleryIDs(
         tag: Tag,
         language: String?,
         page: Int,
-        pageSize: Int = NozomiParser.defaultPageSize
+        pageSize: Int = NozomiParser.defaultPageSize,
+        orderBy: String? = nil
     ) async throws -> (ids: [Int], totalCount: Int?) {
         let urlString = NozomiParser.tagURL(
             tagType: tag.nozomiTagType,
             tagValue: tag.nozomiTagValue,
-            language: language
+            language: language,
+            orderBy: orderBy
         )
         guard let url = URL(string: urlString) else {
             throw HitomiAPIError.invalidURL(urlString)
@@ -246,8 +251,8 @@ final class HitomiAPI: ObservableObject {
     // MARK: - View Compatibility Wrappers
 
     /// Fetches gallery IDs for BrowseView.
-    func fetchGalleryIDs(page: Int, perPage: Int, language: String? = nil) async throws -> [Int] {
-        let (ids, _) = try await fetchGalleryIDs(language: language, page: page, pageSize: perPage)
+    func fetchGalleryIDs(page: Int, perPage: Int, language: String? = nil, orderBy: String? = nil) async throws -> [Int] {
+        let (ids, _) = try await fetchGalleryIDs(language: language, page: page, pageSize: perPage, orderBy: orderBy)
         return ids
     }
 
@@ -256,13 +261,78 @@ final class HitomiAPI: ObservableObject {
         try await fetchGallery(id: id)
     }
 
+    /// Fetches ALL gallery IDs for a tag (no page size limit).
+    /// Used for tag intersection.
+    func fetchAllGalleryIDs(
+        tag: Tag,
+        language: String?,
+        orderBy: String? = nil
+    ) async throws -> [Int] {
+        let urlString = NozomiParser.tagURL(
+            tagType: tag.nozomiTagType,
+            tagValue: tag.nozomiTagValue,
+            language: language,
+            orderBy: orderBy
+        )
+        guard let url = URL(string: urlString) else {
+            throw HitomiAPIError.invalidURL(urlString)
+        }
+
+        var request = URLRequest(url: url)
+        let (data, response) = try await session.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+            throw HitomiAPIError.httpError(statusCode: statusCode, galleryID: -1)
+        }
+
+        return NozomiParser.parseNozomiData(data)
+    }
+
+    /// Fetches and intersects gallery IDs matching multiple tags.
+    /// Supports a list of tags. Returns all intersected IDs.
+    func fetchGalleryIDsByTags(
+        tags: [Tag],
+        language: String?,
+        orderBy: String? = nil
+    ) async throws -> [Int] {
+        guard !tags.isEmpty else { return [] }
+
+        // Fetch IDs for each tag concurrently
+        let results = try await withThrowingTaskGroup(of: [Int].self) { group in
+            for tag in tags {
+                group.addTask {
+                    try await self.fetchAllGalleryIDs(tag: tag, language: language, orderBy: orderBy)
+                }
+            }
+
+            var allResults = [[Int]]()
+            for try await ids in group {
+                allResults.append(ids)
+            }
+            return allResults
+        }
+
+        guard !results.isEmpty else { return [] }
+
+        // Intersect the results while preserving the order of the first tag
+        let firstTagIds = results[0]
+        let otherSets = results.dropFirst().map { Set($0) }
+
+        let intersected = firstTagIds.filter { id in
+            otherSets.allSatisfy { $0.contains(id) }
+        }
+        return intersected
+    }
+
     /// Fetches gallery IDs by tag for SearchView.
-    func fetchGalleryIDsByTag(type: String, name: String, page: Int, perPage: Int) async throws -> [Int] {
+    func fetchGalleryIDsByTag(type: String, name: String, page: Int, perPage: Int, orderBy: String? = nil) async throws -> [Int] {
         let gender: Tag.Gender? = Tag.Gender(rawValue: type)
         // Match the url structure used in hitomi
         let tagUrl = "/tag/\(type == "tag" ? "" : type + ":")\(name)-all.html"
         let tag = Tag(tag: name, url: tagUrl, gender: gender)
-        let (ids, _) = try await fetchGalleryIDs(tag: tag, language: nil, page: page, pageSize: perPage)
+        let (ids, _) = try await fetchGalleryIDs(tag: tag, language: nil, page: page, pageSize: perPage, orderBy: orderBy)
         return ids
     }
 

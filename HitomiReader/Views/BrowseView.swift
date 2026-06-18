@@ -14,6 +14,7 @@ class BrowseViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var randomGallery: Gallery? = nil
     @Published var isFetchingRandom = false
+    @Published var sortOrder: SortOrder = .latest
     
     private var currentPage = 0
     private let perPage = 25
@@ -78,7 +79,8 @@ class BrowseViewModel: ObservableObject {
             let ids = try await HitomiAPI.shared.fetchGalleryIDs(
                 page: currentPage,
                 perPage: perPage,
-                language: SettingsManager.shared.preferredLanguage
+                language: SettingsManager.shared.preferredLanguage,
+                orderBy: sortOrder.apiValue
             )
             
             if ids.isEmpty {
@@ -173,11 +175,32 @@ struct BrowseView: View {
             }
             
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showSettings = true
-                } label: {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(Color(hex: "FF2D78"))
+                HStack(spacing: 16) {
+                    Menu {
+                        ForEach(SortOrder.allCases) { order in
+                            Button {
+                                viewModel.sortOrder = order
+                                Task { await viewModel.loadInitial() }
+                            } label: {
+                                HStack {
+                                    Text(order.displayName)
+                                    if viewModel.sortOrder == order {
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .foregroundColor(Color(hex: "FF2D78"))
+                    }
+                    
+                    Button {
+                        showSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .foregroundColor(Color(hex: "FF2D78"))
+                    }
                 }
             }
         }
