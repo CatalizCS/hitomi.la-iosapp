@@ -11,6 +11,9 @@ struct GalleryDetailView: View {
     
     @EnvironmentObject var history: HistoryManager
     @EnvironmentObject var favoriteTags: FavoriteTagsManager
+    @EnvironmentObject var favoriteGalleries: FavoriteGalleriesManager
+    @EnvironmentObject var downloads: DownloadManager
+    @EnvironmentObject var readingStatuses: ReadingStatusManager
     @Environment(\.dismiss) private var dismiss
     
     @State private var showReader = false
@@ -59,10 +62,24 @@ struct GalleryDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    favoriteGalleries.toggle(gallery)
+                } label: {
+                    Image(systemName: favoriteGalleries.isFavorite(id: gallery.id) ? "heart.fill" : "heart")
+                        .foregroundColor(Color(hex: "FF2D78"))
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showReader) {
             ReaderView(gallery: gallery, startPage: startPage)
         }
         .onAppear {
+            if let localURL = DownloadManager.shared.getLocalImageURL(for: gallery.id, pageIndex: 0) {
+                self.coverURL = localURL
+                return
+            }
             Task {
                 if coverURL == nil, let firstImage = gallery.files?.first {
                     do {
@@ -357,6 +374,98 @@ struct GalleryDetailView: View {
                         )
                 }
                 .buttonStyle(PressedScaleButtonStyle())
+            }
+            
+            // Reading Status and Download Controls
+            HStack(spacing: 12) {
+                // Reading Status Selector
+                Menu {
+                    ForEach(ReadingStatus.allCases) { status in
+                        Button {
+                            readingStatuses.setStatus(status, for: gallery)
+                        } label: {
+                            HStack {
+                                Text(status.viDisplayName)
+                                if readingStatuses.getStatus(for: gallery.id) == status {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "bookmark.fill")
+                        let currentStatus = readingStatuses.getStatus(for: gallery.id)
+                        Text(currentStatus == .none ? "Trạng thái" : currentStatus.viDisplayName)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                }
+                
+                // Download Button
+                if downloads.isDownloaded(galleryID: gallery.id) {
+                    Menu {
+                        Button(role: .destructive) {
+                            downloads.deleteDownload(galleryID: gallery.id)
+                        } label: {
+                            Label("Xóa bản tải", systemImage: "trash")
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Đã tải về")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                } else if downloads.isDownloading(galleryID: gallery.id) {
+                    let progress = downloads.getProgress(for: gallery.id) ?? 0.0
+                    HStack {
+                        ProgressView()
+                            .tint(Color(hex: "FF2D78"))
+                            .scaleEffect(0.8)
+                        Text(String(format: "Đang tải %d%%", Int(progress * 100)))
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.7))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white.opacity(0.08))
+                    )
+                } else {
+                    Button {
+                        downloads.download(gallery)
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.down.circle")
+                            Text("Tải ngoại tuyến")
+                        }
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(PressedScaleButtonStyle())
+                }
             }
         }
     }

@@ -394,6 +394,13 @@ struct ReaderView: View {
     
     private func resolveURL(for index: Int) async {
         guard index >= 0, index < pageCount, imageURLs[index] == nil else { return }
+        
+        // Check if downloaded offline file exists
+        if let localURL = DownloadManager.shared.getLocalImageURL(for: gallery.id, pageIndex: index) {
+            imageURLs[index] = localURL
+            return
+        }
+        
         guard let files = gallery.files, index < files.count else { return }
         let image = files[index]
         if let url = try? await HitomiAPI.shared.getImageURL(image: image, galleryID: gallery.id) {

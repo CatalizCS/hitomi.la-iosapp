@@ -66,6 +66,26 @@ struct SettingsView: View {
                         sectionHeader("Reading Preferences")
                     }
                     
+                    // MARK: - Privacy & Security
+                    Section {
+                        Toggle(isOn: $settings.isPrivacyLockEnabled) {
+                            Label("FaceID Privacy Lock", systemImage: "faceid")
+                                .foregroundColor(.white)
+                        }
+                        .tint(Color(hex: "FF2D78"))
+                        .listRowBackground(Color.white.opacity(0.04))
+                        
+                        NavigationLink {
+                            BlacklistSettingsView()
+                        } label: {
+                            Label("Blacklisted Tags", systemImage: "nosign")
+                                .foregroundColor(.white)
+                        }
+                        .listRowBackground(Color.white.opacity(0.04))
+                    } header: {
+                        sectionHeader("Privacy & Security")
+                    }
+                    
                     // MARK: - Data Management
                     Section {
                         // Clear History

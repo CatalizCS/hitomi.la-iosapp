@@ -36,10 +36,12 @@ final class SettingsManager: ObservableObject {
     // MARK: - UserDefaults Keys
 
     private enum Keys {
-        static let preferredLanguage     = "settings.preferredLanguage"
+        static let preferredLanguage      = "settings.preferredLanguage"
         static let hasCompletedOnboarding = "settings.hasCompletedOnboarding"
-        static let readerDirection       = "settings.readerDirection"
-        static let itemsPerPage          = "settings.itemsPerPage"
+        static let readerDirection        = "settings.readerDirection"
+        static let itemsPerPage           = "settings.itemsPerPage"
+        static let isPrivacyLockEnabled   = "settings.isPrivacyLockEnabled"
+        static let blacklistedTags        = "settings.blacklistedTags"
     }
 
     // MARK: - Published Properties
@@ -77,6 +79,20 @@ final class SettingsManager: ObservableObject {
         }
     }
 
+    /// Whether FaceID / Passcode privacy lock is enabled.
+    @Published var isPrivacyLockEnabled: Bool {
+        didSet {
+            defaults.set(isPrivacyLockEnabled, forKey: Keys.isPrivacyLockEnabled)
+        }
+    }
+
+    /// List of tag names to exclude from browsing/searching feeds.
+    @Published var blacklistedTags: [String] {
+        didSet {
+            defaults.set(blacklistedTags, forKey: Keys.blacklistedTags)
+        }
+    }
+
     // MARK: - Private
 
     private let defaults = UserDefaults.standard
@@ -88,6 +104,8 @@ final class SettingsManager: ObservableObject {
         self.preferredLanguage = defaults.string(forKey: Keys.preferredLanguage)
         self.hasCompletedOnboarding = defaults.bool(forKey: Keys.hasCompletedOnboarding)
         self.itemsPerPage = defaults.integer(forKey: Keys.itemsPerPage)
+        self.isPrivacyLockEnabled = defaults.bool(forKey: Keys.isPrivacyLockEnabled)
+        self.blacklistedTags = defaults.stringArray(forKey: Keys.blacklistedTags) ?? []
 
         if let dirRaw = defaults.string(forKey: Keys.readerDirection),
            let dir = ReaderDirection(rawValue: dirRaw) {
@@ -120,6 +138,8 @@ final class SettingsManager: ObservableObject {
         hasCompletedOnboarding = false
         readerDirection = .rtl
         itemsPerPage = NozomiParser.defaultPageSize
+        isPrivacyLockEnabled = false
+        blacklistedTags = []
     }
 
     /// Dummy save method since properties auto-save via didSet.

@@ -58,6 +58,7 @@ final class AsyncImageLoader: ObservableObject {
 
     /// Preloads an image into the shared cache on a background thread.
     nonisolated static func preload(url: URL) {
+        if url.isFileURL { return }
         if ImageCache.shared.image(for: url) != nil {
             return
         }
@@ -95,18 +96,23 @@ final class AsyncImageLoader: ObservableObject {
         
         task = Task { [weak self] in
             do {
-                let (data, response) = try await AsyncImageLoader.session.data(from: url)
+                let data: Data
+                if url.isFileURL {
+                    data = try Data(contentsOf: url)
+                } else {
+                    let (fetchedData, response) = try await AsyncImageLoader.session.data(from: url)
+                    
+                    if let httpResponse = response as? HTTPURLResponse,
+                       !(200...299).contains(httpResponse.statusCode) {
+                        print("[AsyncImageView] HTTP Error \(httpResponse.statusCode) loading \(url.absoluteString)")
+                        self?.isLoading = false
+                        self?.hasError = true
+                        return
+                    }
+                    data = fetchedData
+                }
                 
                 guard !Task.isCancelled else { return }
-                
-                // Validate HTTP response
-                if let httpResponse = response as? HTTPURLResponse,
-                   !(200...299).contains(httpResponse.statusCode) {
-                    print("[AsyncImageView] HTTP Error \(httpResponse.statusCode) loading \(url.absoluteString)")
-                    self?.isLoading = false
-                    self?.hasError = true
-                    return
-                }
                 
                 if let uiImage = UIImage(data: data) {
                     ImageCache.shared.store(uiImage, for: url)

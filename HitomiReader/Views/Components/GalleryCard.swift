@@ -85,6 +85,10 @@ struct GalleryCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
         .onAppear {
+            if let localURL = DownloadManager.shared.getLocalImageURL(for: gallery.id, pageIndex: 0) {
+                self.thumbnailURL = localURL
+                return
+            }
             Task {
                 if thumbnailURL == nil, let firstImage = gallery.files?.first {
                     do {

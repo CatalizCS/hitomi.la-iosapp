@@ -96,7 +96,14 @@ class BrowseViewModel: ObservableObject {
             }
             
             let newGalleries = await HitomiAPI.shared.fetchGalleries(ids: newIDs)
-            galleries.append(contentsOf: newGalleries)
+            
+            let filteredGalleries = newGalleries.filter { gallery in
+                guard let tags = gallery.tags else { return true }
+                let blacklisted = SettingsManager.shared.blacklistedTags
+                return !tags.contains(where: { blacklisted.contains($0.tag.lowercased()) })
+            }
+            
+            galleries.append(contentsOf: filteredGalleries)
             
             // Sort galleries to match ID order
             let idOrder = Dictionary(uniqueKeysWithValues: allIDs.enumerated().map { ($1, $0) })

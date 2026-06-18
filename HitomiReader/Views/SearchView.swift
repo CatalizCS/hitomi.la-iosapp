@@ -205,10 +205,16 @@ class SearchViewModel: ObservableObject {
             
             let newGalleries = await HitomiAPI.shared.fetchGalleries(ids: pageIDs)
             
+            let filteredGalleries = newGalleries.filter { gallery in
+                guard let tags = gallery.tags else { return true }
+                let blacklisted = SettingsManager.shared.blacklistedTags
+                return !tags.contains(where: { blacklisted.contains($0.tag.lowercased()) })
+            }
+            
             if currentPage == 0 {
-                results = newGalleries
+                results = filteredGalleries
             } else {
-                results.append(contentsOf: newGalleries)
+                results.append(contentsOf: filteredGalleries)
             }
             
             hasMorePages = endIndex < allIDs.count

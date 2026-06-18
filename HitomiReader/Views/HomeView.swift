@@ -17,7 +17,7 @@ struct HomeView: View {
             case .browse: return "house.fill"
             case .search: return "magnifyingglass"
             case .history: return "clock.fill"
-            case .favorites: return "heart.fill"
+            case .favorites: return "books.vertical.fill"
             }
         }
         
@@ -26,7 +26,7 @@ struct HomeView: View {
             case .browse: return "Browse"
             case .search: return "Search"
             case .history: return "History"
-            case .favorites: return "Favorites"
+            case .favorites: return "Library"
             }
         }
     }
@@ -60,9 +60,9 @@ struct HomeView: View {
             }
             .tag(Tab.history)
             
-            // MARK: - Favorites Tab
+            // MARK: - Library Tab
             NavigationStack {
-                FavoriteTagsView()
+                LibraryView()
             }
             .tabItem {
                 Label(Tab.favorites.label, systemImage: Tab.favorites.icon)
