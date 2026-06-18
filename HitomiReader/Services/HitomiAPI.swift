@@ -82,8 +82,7 @@ final class HitomiAPI: ObservableObject {
         let ids = NozomiParser.parseNozomiData(data)
 
         // Attempt to extract total count from Content-Range header.
-        let httpResponse = response as? HTTPURLResponse
-        let contentRange = httpResponse?.value(forHTTPHeaderField: "Content-Range")
+        let contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range")
         let totalCount = NozomiParser.totalCount(fromContentRange: contentRange)
 
         return (ids, totalCount)
@@ -127,8 +126,7 @@ final class HitomiAPI: ObservableObject {
 
         let ids = NozomiParser.parseNozomiData(data)
 
-        let httpResponse = response as? HTTPURLResponse
-        let contentRange = httpResponse?.value(forHTTPHeaderField: "Content-Range")
+        let contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range")
         let totalCount = NozomiParser.totalCount(fromContentRange: contentRange)
 
         return (ids, totalCount)
