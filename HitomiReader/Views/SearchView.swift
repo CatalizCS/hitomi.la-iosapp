@@ -293,6 +293,7 @@ struct SearchView: View {
                             .transition(.opacity)
                     }
                 }
+            }
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.large)

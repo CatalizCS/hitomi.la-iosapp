@@ -278,7 +278,7 @@ final class HitomiAPI: ObservableObject {
             throw HitomiAPIError.invalidURL(urlString)
         }
 
-        var request = URLRequest(url: url)
+        let request = URLRequest(url: url)
         let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
