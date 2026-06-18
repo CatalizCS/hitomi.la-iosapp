@@ -43,7 +43,7 @@ final class AsyncImageLoader: ObservableObject {
     private var task: Task<Void, Never>?
     
     /// Shared URLSession with Referer header
-    private static let session: URLSession = {
+    nonisolated private static let session: URLSession = {
         let config = URLSessionConfiguration.default
         config.httpAdditionalHeaders = [
             "Referer": "https://hitomi.la/",

@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct ReaderView: View {
     let gallery: Gallery
     let startPage: Int

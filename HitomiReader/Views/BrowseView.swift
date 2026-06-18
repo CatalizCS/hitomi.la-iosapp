@@ -120,6 +120,7 @@ struct BrowseView: View {
     @EnvironmentObject var settings: SettingsManager
     @StateObject private var viewModel = BrowseViewModel()
     @State private var showSettings = false
+    @State private var isShowingRandomGallery = false
     
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -141,8 +142,20 @@ struct BrowseView: View {
         }
         .navigationTitle("Browse")
         .navigationBarTitleDisplayMode(.large)
-        .navigationDestination(item: $viewModel.randomGallery) { gallery in
-            GalleryDetailView(gallery: gallery)
+        .navigationDestination(isPresented: $isShowingRandomGallery) {
+            if let gallery = viewModel.randomGallery {
+                GalleryDetailView(gallery: gallery)
+            }
+        }
+        .onChange(of: viewModel.randomGallery) { newGallery in
+            if newGallery != nil {
+                isShowingRandomGallery = true
+            }
+        }
+        .onChange(of: isShowingRandomGallery) { isPresented in
+            if !isPresented {
+                viewModel.randomGallery = nil
+            }
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
