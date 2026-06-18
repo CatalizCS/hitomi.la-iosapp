@@ -362,6 +362,7 @@ struct ReaderView: View {
         let image = files[index]
         if let url = try? await HitomiAPI.shared.getImageURL(image: image, galleryID: gallery.id) {
             imageURLs[index] = url
+            AsyncImageLoader.preload(url: url)
         }
     }
     

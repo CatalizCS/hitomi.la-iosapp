@@ -55,6 +55,26 @@ final class AsyncImageLoader: ObservableObject {
         )
         return URLSession(configuration: config)
     }()
+
+    /// Preloads an image into the shared cache on a background thread.
+    static func preload(url: URL) {
+        if ImageCache.shared.image(for: url) != nil {
+            return
+        }
+
+        Task.detached(priority: .background) {
+            do {
+                let (data, response) = try await session.data(from: url)
+                if let httpResponse = response as? HTTPURLResponse,
+                   (200...299).contains(httpResponse.statusCode),
+                   let uiImage = UIImage(data: data) {
+                    ImageCache.shared.store(uiImage, for: url)
+                }
+            } catch {
+                // Ignore preloading errors
+            }
+        }
+    }
     
     func load(url: URL) {
         // Don't reload if already showing this URL
