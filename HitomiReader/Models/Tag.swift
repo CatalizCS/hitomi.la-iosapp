@@ -19,6 +19,7 @@ struct Tag: Codable, Hashable, Identifiable {
     let tag: String
     let url: String
     let gender: Gender?     // nil when the tag has no gender prefix
+    var count: Int? = nil   // Optional count of items returned by search index
 
     // MARK: - Gender enum
 
@@ -66,10 +67,11 @@ struct Tag: Codable, Hashable, Identifiable {
         case male
     }
 
-    init(tag: String, url: String, gender: Gender?) {
+    init(tag: String, url: String, gender: Gender?, count: Int? = nil) {
         self.tag = tag
         self.url = url
         self.gender = gender
+        self.count = count
     }
 
     init(from decoder: Decoder) throws {

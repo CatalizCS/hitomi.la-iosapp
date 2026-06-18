@@ -12,6 +12,8 @@ class BrowseViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
+    @Published var randomGallery: Gallery? = nil
+    @Published var isFetchingRandom = false
     
     private var currentPage = 0
     private let perPage = 25
@@ -38,6 +40,37 @@ class BrowseViewModel: ObservableObject {
         currentPage += 1
         await loadPage()
         isLoadingMore = false
+    }
+    
+    func loadRandomGallery() async {
+        guard !isFetchingRandom else { return }
+        isFetchingRandom = true
+        
+        do {
+            let (ids, _) = try await HitomiAPI.shared.fetchGalleryIDs(
+                language: SettingsManager.shared.preferredLanguage,
+                page: 0
+            )
+            guard !ids.isEmpty else {
+                isFetchingRandom = false
+                return
+            }
+            
+            let newestID = ids.first ?? 3930000
+            let oldestID = 2500000
+            
+            for _ in 0..<8 {
+                let randomID = Int.random(in: oldestID...newestID)
+                if let gallery = try? await HitomiAPI.shared.fetchGalleryInfo(id: randomID) {
+                    self.randomGallery = gallery
+                    isFetchingRandom = false
+                    return
+                }
+            }
+        } catch {
+            // Ignore
+        }
+        isFetchingRandom = false
     }
     
     private func loadPage() async {
@@ -108,7 +141,24 @@ struct BrowseView: View {
         }
         .navigationTitle("Browse")
         .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(item: $viewModel.randomGallery) { gallery in
+            GalleryDetailView(gallery: gallery)
+        }
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    Task { await viewModel.loadRandomGallery() }
+                } label: {
+                    if viewModel.isFetchingRandom {
+                        ProgressView().tint(Color(hex: "FF2D78"))
+                    } else {
+                        Image(systemName: "shuffle")
+                            .foregroundColor(Color(hex: "FF2D78"))
+                    }
+                }
+                .disabled(viewModel.isFetchingRandom)
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showSettings = true

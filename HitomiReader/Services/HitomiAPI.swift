@@ -271,6 +271,73 @@ final class HitomiAPI: ObservableObject {
         try await ImageURLResolver.shared.ensureReady()
         return try ImageURLResolver.shared.resolveImageURL(galleryID: galleryID, image: image)
     }
+
+    /// Fetches autocomplete tag suggestions for a prefix query.
+    /// - Parameter query: e.g. "female:sch" or "sch"
+    /// - Returns: A list of matching Tag objects.
+    func fetchTagSuggestions(query: String) async throws -> [Tag] {
+        let cleanQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard cleanQuery.count >= 2 else { return [] }
+        
+        var type = "global"
+        var term = cleanQuery
+        
+        // Check if there is a colon prefix
+        if let colonIndex = cleanQuery.firstIndex(of: ":") {
+            let typePart = String(cleanQuery[..<colonIndex])
+            // Verify if it's a valid tag type
+            let validTypes = ["artist", "group", "type", "language", "series", "character", "male", "female", "tag"]
+            if validTypes.contains(typePart) {
+                type = typePart
+                term = String(cleanQuery[cleanQuery.index(after: colonIndex)...])
+            }
+        }
+        
+        guard !term.isEmpty else { return [] }
+        
+        // Build path: e.g. "/female/s/c/h.json"
+        var path = "/\(type)"
+        for char in term {
+            if char.isLetter || char.isNumber || char == "_" || char == "-" || char == " " {
+                path += "/\(char)"
+            }
+        }
+        
+        let urlString = "https://tagindex.hitomi.la\(path).json"
+        guard let url = URL(string: urlString) else {
+            return []
+        }
+        
+        var request = URLRequest(url: url)
+        request.setValue("https://hitomi.la/", forHTTPHeaderField: "Referer")
+        
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return []
+        }
+        
+        // Parse the response: [[String, Int, String]] -> [Tag]
+        struct RawSuggestion: Decodable {
+            let name: String
+            let count: Int
+            let type: String
+            
+            init(from decoder: Decoder) throws {
+                var container = try decoder.unkeyedContainer()
+                name = try container.decode(String.self)
+                count = try container.decode(Int.self)
+                type = try container.decode(String.self)
+            }
+        }
+        
+        let rawSuggestions = try JSONDecoder().decode([RawSuggestion].self, from: data)
+        return rawSuggestions.map { sug in
+            let gender = Tag.Gender(rawValue: sug.type)
+            let tagUrl = "/tag/\(sug.type == "tag" ? "" : sug.type + ":")\(sug.name.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? sug.name)-all.html"
+            return Tag(tag: sug.name, url: tagUrl, gender: gender, count: sug.count)
+        }
+    }
 }
 
 // MARK: - Errors

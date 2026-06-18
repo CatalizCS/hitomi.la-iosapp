@@ -16,7 +16,9 @@ class SearchViewModel: ObservableObject {
     @Published var hasSearched = false
     @Published var errorMessage: String?
     @Published var isLoadingMore = false
+    @Published var tagSuggestions: [Tag] = []
     
+    private var suggestionsTask: Task<Void, Never>?
     private var currentPage = 0
     private let perPage = 25
     private var hasMorePages = true
@@ -47,6 +49,7 @@ class SearchViewModel: ObservableObject {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return }
         
+        tagSuggestions.removeAll()
         isSearching = true
         hasSearched = true
         errorMessage = nil
@@ -77,6 +80,7 @@ class SearchViewModel: ObservableObject {
     func searchByTag(type: String, name: String) async {
         searchText = "\(type):\(name)"
         selectedType = .all
+        tagSuggestions.removeAll()
         isSearching = true
         hasSearched = true
         errorMessage = nil
@@ -86,6 +90,29 @@ class SearchViewModel: ObservableObject {
         
         await fetchResults(type: type, name: name)
         isSearching = false
+    }
+    
+    func updateSuggestions() {
+        suggestionsTask?.cancel()
+        
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard query.count >= 2 else {
+            tagSuggestions = []
+            return
+        }
+        
+        suggestionsTask = Task {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            guard !Task.isCancelled else { return }
+            
+            do {
+                let suggestions = try await HitomiAPI.shared.fetchTagSuggestions(query: query)
+                guard !Task.isCancelled else { return }
+                self.tagSuggestions = suggestions
+            } catch {
+                // Ignore suggestions errors
+            }
+        }
     }
     
     private func parseQuery(_ query: String) -> (type: String, name: String) {
@@ -164,25 +191,49 @@ struct SearchView: View {
                 typeFilter
                 
                 // MARK: - Content
-                if viewModel.isSearching && viewModel.results.isEmpty {
-                    Spacer()
-                    searchingIndicator
-                    Spacer()
-                } else if viewModel.hasSearched && viewModel.results.isEmpty && !viewModel.isSearching {
-                    Spacer()
-                    noResultsView
-                    Spacer()
-                } else if viewModel.results.isEmpty {
-                    Spacer()
-                    searchPrompt
-                    Spacer()
-                } else {
-                    resultsGrid
+                ZStack(alignment: .top) {
+                    if viewModel.isSearching && viewModel.results.isEmpty {
+                        VStack {
+                            Spacer()
+                            searchingIndicator
+                            Spacer()
+                        }
+                    } else if viewModel.hasSearched && viewModel.results.isEmpty && !viewModel.isSearching {
+                        VStack {
+                            Spacer()
+                            noResultsView
+                            Spacer()
+                        }
+                    } else if viewModel.results.isEmpty {
+                        VStack {
+                            Spacer()
+                            searchPrompt
+                            Spacer()
+                        }
+                    } else {
+                        resultsGrid
+                    }
+                    
+                    // Autocomplete Suggestions Overlay
+                    if !viewModel.tagSuggestions.isEmpty {
+                        Color.black.opacity(0.65)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                viewModel.tagSuggestions = []
+                                isSearchFocused = false
+                            }
+                        
+                        suggestionsList
+                            .transition(.opacity)
+                    }
                 }
             }
         }
         .navigationTitle("Search")
         .navigationBarTitleDisplayMode(.large)
+        .onChange(of: viewModel.searchText) { _ in
+            viewModel.updateSuggestions()
+        }
     }
     
     // MARK: - Search Bar
@@ -380,6 +431,60 @@ struct SearchView: View {
                     .foregroundColor(.white.opacity(0.3))
             }
         }
+    }
+
+    // MARK: - Autocomplete Suggestions List
+    private var suggestionsList: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(viewModel.tagSuggestions) { tag in
+                    Button {
+                        viewModel.searchText = tag.displayName
+                        viewModel.tagSuggestions = []
+                        isSearchFocused = false
+                        Task { await viewModel.search() }
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "tag.fill")
+                                .font(.subheadline)
+                                .foregroundColor(tag.gender == .female ? Color(hex: "FF2D78") : (tag.gender == .male ? .blue : .white.opacity(0.4)))
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(tag.displayName)
+                                    .font(.body)
+                                    .foregroundColor(.white)
+                                
+                                if let count = tag.count {
+                                    Text("\(count) items")
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.45))
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            Image(systemName: "arrow.up.backward")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.25))
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressedScaleButtonStyle())
+                    
+                    Divider()
+                        .background(Color.white.opacity(0.08))
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(hex: "1A1A1A"))
+            )
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+        .frame(maxHeight: 280)
     }
 }
 
