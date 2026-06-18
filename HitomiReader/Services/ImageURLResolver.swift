@@ -130,9 +130,12 @@ final class ImageURLResolver: ObservableObject {
             throw ImageURLResolverError.notReady
         }
 
+        let hasWebpValue = image.haswebp ?? 1
+        let hasAvifValue = image.hasavif ?? 0
+
         // Build a JS object literal for the image parameter.
         let imageJSON = """
-        ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(image.haswebp), "hasavif": \(image.hasavif) })
+        ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(hasWebpValue), "hasavif": \(hasAvifValue) })
         """
 
         // Use WebP quality for loading pages since hitomi.la no longer hosts original JPG/PNG formats.
@@ -159,8 +162,11 @@ final class ImageURLResolver: ObservableObject {
             throw ImageURLResolverError.notReady
         }
 
+        let hasWebpValue = image.haswebp ?? 1
+        let hasAvifValue = image.hasavif ?? 0
+
         let imageJSON = """
-        ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(image.haswebp), "hasavif": \(image.hasavif) })
+        ({ "name": "\(image.name)", "hash": "\(image.hash)", "haswebp": \(hasWebpValue), "hasavif": \(hasAvifValue) })
         """
 
         let script = "url_from_url_from_hash(\(galleryID), \(imageJSON), 'webpbigtn', 'webp', 'tn')"
