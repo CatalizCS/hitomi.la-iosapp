@@ -93,24 +93,44 @@ class SearchViewModel: ObservableObject {
     func updateSuggestions() {
         suggestionsTask?.cancel()
         
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard query.count >= 2 else {
+        let query = searchText
+        guard !query.hasSuffix(" ") else {
             tagSuggestions = []
             return
         }
+        
+        let parts = query.trimmingCharacters(in: .whitespacesAndNewlines).split(separator: " ")
+        guard let lastPart = parts.last, lastPart.count >= 2 else {
+            tagSuggestions = []
+            return
+        }
+        
+        let termToSuggest = String(lastPart)
         
         suggestionsTask = Task {
             try? await Task.sleep(nanoseconds: 200_000_000)
             guard !Task.isCancelled else { return }
             
             do {
-                let suggestions = try await HitomiAPI.shared.fetchTagSuggestions(query: query)
+                let suggestions = try await HitomiAPI.shared.fetchTagSuggestions(query: termToSuggest)
                 guard !Task.isCancelled else { return }
                 self.tagSuggestions = suggestions
             } catch {
                 // Ignore suggestions errors
             }
         }
+    }
+    
+    func selectSuggestion(_ tag: Tag) {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        var parts = query.split(separator: " ").map { String($0) }
+        if !parts.isEmpty {
+            parts[parts.count - 1] = tag.displayName
+            searchText = parts.joined(separator: " ") + " "
+        } else {
+            searchText = tag.displayName + " "
+        }
+        tagSuggestions = []
     }
     
     private func parseQueryTags(_ query: String) -> [Tag] {
@@ -511,10 +531,7 @@ struct SearchView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(viewModel.tagSuggestions) { tag in
                     Button {
-                        viewModel.searchText = tag.displayName
-                        viewModel.tagSuggestions = []
-                        isSearchFocused = false
-                        Task { await viewModel.search() }
+                        viewModel.selectSuggestion(tag)
                     } label: {
                         HStack(spacing: 14) {
                             Image(systemName: "tag.fill")

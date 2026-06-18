@@ -129,21 +129,13 @@ struct ReaderView: View {
         ZStack {
             Color.black
             
-            if let url = imageURLs[index] {
-                ZoomableImageView(url: url)
-            } else {
-                // Try to resolve URL on-the-fly
-                VStack(spacing: 12) {
-                    ProgressView()
-                        .tint(.white.opacity(0.5))
-                    Text("Loading page \(index + 1)…")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.3))
+            ZoomableImageView(
+                url: imageURLs[index],
+                index: index,
+                onResolve: {
+                    Task { await resolveURL(for: index) }
                 }
-                .task {
-                    await resolveURL(for: index)
-                }
-            }
+            )
         }
         .task {
             // Preload adjacent pages
@@ -153,7 +145,9 @@ struct ReaderView: View {
     
     // MARK: - Zoomable Image View
     struct ZoomableImageView: View {
-        let url: URL
+        let url: URL?
+        let index: Int
+        let onResolve: () -> Void
         
         @State private var scale: CGFloat = 1.0
         @State private var lastScale: CGFloat = 1.0
@@ -161,51 +155,66 @@ struct ReaderView: View {
         @State private var lastOffset: CGSize = .zero
         
         var body: some View {
-            AsyncImageView(url: url, contentMode: .fit, cornerRadius: 0)
-                .scaleEffect(scale)
-                .offset(offset)
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            let delta = value / lastScale
-                            lastScale = value
-                            scale = min(max(scale * delta, 1.0), 5.0)
-                        }
-                        .onEnded { _ in
-                            lastScale = 1.0
-                            if scale < 1.1 {
-                                withAnimation(.spring(response: 0.3)) {
+            Group {
+                if let url = url {
+                    AsyncImageView(url: url, contentMode: .fit, cornerRadius: 0)
+                        .scaleEffect(scale)
+                        .offset(offset)
+                        .gesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    let delta = value / lastScale
+                                    lastScale = value
+                                    scale = min(max(scale * delta, 1.0), 5.0)
+                                }
+                                .onEnded { _ in
+                                    lastScale = 1.0
+                                    if scale < 1.1 {
+                                        withAnimation(.spring(response: 0.3)) {
+                                            scale = 1.0
+                                            offset = .zero
+                                        }
+                                    }
+                                }
+                        )
+                        .simultaneousGesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    guard scale > 1.05 else { return }
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                }
+                                .onEnded { _ in
+                                    guard scale > 1.05 else { return }
+                                    lastOffset = offset
+                                }
+                        )
+                        .onTapGesture(count: 2) {
+                            withAnimation(.spring(response: 0.3)) {
+                                if scale > 1.1 {
                                     scale = 1.0
                                     offset = .zero
+                                    lastOffset = .zero
+                                } else {
+                                    scale = 2.5
                                 }
                             }
                         }
-                )
-                .simultaneousGesture(
-                    DragGesture()
-                        .onChanged { value in
-                            guard scale > 1.05 else { return }
-                            offset = CGSize(
-                                width: lastOffset.width + value.translation.width,
-                                height: lastOffset.height + value.translation.height
-                            )
-                        }
-                        .onEnded { _ in
-                            guard scale > 1.05 else { return }
-                            lastOffset = offset
-                        }
-                )
-                .onTapGesture(count: 2) {
-                    withAnimation(.spring(response: 0.3)) {
-                        if scale > 1.1 {
-                            scale = 1.0
-                            offset = .zero
-                            lastOffset = .zero
-                        } else {
-                            scale = 2.5
-                        }
+                } else {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .tint(.white.opacity(0.5))
+                        Text("Loading page \(index + 1)…")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.3))
+                    }
+                    .onAppear {
+                        onResolve()
                     }
                 }
+            }
         }
     }
     
@@ -363,7 +372,9 @@ struct ReaderView: View {
         let image = files[index]
         if let url = try? await HitomiAPI.shared.getImageURL(image: image, galleryID: gallery.id) {
             imageURLs[index] = url
-            AsyncImageLoader.preload(url: url)
+            if index != currentPage {
+                AsyncImageLoader.preload(url: url)
+            }
         }
     }
     

@@ -102,6 +102,7 @@ final class AsyncImageLoader: ObservableObject {
                 // Validate HTTP response
                 if let httpResponse = response as? HTTPURLResponse,
                    !(200...299).contains(httpResponse.statusCode) {
+                    print("[AsyncImageView] HTTP Error \(httpResponse.statusCode) loading \(url.absoluteString)")
                     self?.isLoading = false
                     self?.hasError = true
                     return
@@ -112,10 +113,12 @@ final class AsyncImageLoader: ObservableObject {
                     self?.image = uiImage
                     self?.isLoading = false
                 } else {
+                    print("[AsyncImageView] Failed to decode image data for \(url.absoluteString)")
                     self?.isLoading = false
                     self?.hasError = true
                 }
             } catch {
+                print("[AsyncImageView] Error loading \(url.absoluteString): \(error.localizedDescription)")
                 guard !Task.isCancelled else { return }
                 self?.isLoading = false
                 self?.hasError = true
